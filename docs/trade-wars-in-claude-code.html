@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trade Wars in Claude Code — the third head of the agent client</title>
+<style>
+  :root{
+    --bg:#0d0d12; --panel:#15151d; --panel2:#1c1c26; --line:#2a2a38;
+    --text:#e0e0e0; --dim:#9a9aa8; --gold:#d4af37; --goldL:#e6c966;
+    --er:#ff6347; --la:#00ff7f; --th:#8a2be2;
+    --ok:#4baf4b; --warn:#ffa500; --err:#ff6b6b; --info:#6b9bd2;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);font:400 16.5px/1.65 -apple-system,"Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 28px 120px}
+  a{color:var(--goldL)}
+  code{font:500 .88em/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;background:#22222e;border:1px solid var(--line);border-radius:5px;padding:.1em .38em;color:#f0dfa8}
+  pre{background:#08080c;border:1px solid var(--line);border-radius:12px;padding:20px 22px;overflow:auto;font:500 13.5px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0 0 20px;color:#cfcfe0}
+  pre b{color:var(--gold);font-weight:600} pre i{color:#8a8a9e;font-style:normal} pre u{color:var(--la);text-decoration:none}
+
+  header{border-bottom:1px solid var(--line);padding:70px 0 44px;margin-bottom:12px;background:radial-gradient(900px 300px at 12% 0%,rgba(212,175,55,.10),transparent 70%)}
+  h1{font-size:clamp(32px,5vw,50px);line-height:1.06;margin:0 0 14px;letter-spacing:-.025em}
+  .sub{font-size:20px;color:var(--dim);max-width:62ch;margin:0 0 26px}
+  .meta{display:flex;flex-wrap:wrap;gap:10px}
+  .pill{font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:6px 12px;border-radius:999px;border:1px solid var(--line);color:var(--dim)}
+  .pill.draft{background:rgba(255,165,0,.12);border-color:rgba(255,165,0,.4);color:var(--warn)}
+  .pill.not{background:rgba(255,107,107,.12);border-color:rgba(255,107,107,.4);color:var(--err)}
+  .pill.phase{background:rgba(138,43,226,.14);border-color:rgba(138,43,226,.45);color:#c9a7f0}
+
+  section{padding:48px 0;border-top:1px solid var(--line)}
+  h2{font-size:clamp(24px,3.2vw,32px);margin:0 0 10px;letter-spacing:-.02em;color:#fff}
+  h2 .n{color:var(--gold);font-variant-numeric:tabular-nums;margin-right:.4em}
+  h3{font-size:19px;margin:30px 0 8px;color:var(--goldL)}
+  p{margin:0 0 16px;max-width:74ch}
+  ul,ol{max-width:74ch;padding-left:1.15em} li{margin-bottom:9px}
+  .lede{font-size:18.5px;color:var(--dim);max-width:66ch}
+
+  table{width:100%;border-collapse:collapse;margin:18px 0 22px;font-size:15px}
+  th,td{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--gold);font-size:12.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:700}
+  td code{font-size:13px}
+  tbody tr:hover{background:rgba(255,255,255,.02)}
+
+  .tiers{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));margin:26px 0}
+  .tier{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;display:flex;flex-direction:column}
+  .tier .cap{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}
+  .t3 .cap{color:#c9a7f0} .t2 .cap{color:var(--gold)} .t1 .cap{color:var(--la)}
+  .t3{border-top:3px solid var(--th)} .t2{border-top:3px solid var(--gold)} .t1{border-top:3px solid var(--la)}
+  .tier h3{margin:0 0 8px;color:#fff;font-size:18px}
+  .tier p{font-size:15px;color:var(--dim);margin:0 0 12px}
+  .tier .cost{font-size:13px;font-family:ui-monospace,Menlo,monospace;color:var(--dim);border-top:1px solid var(--line);padding-top:10px;margin-top:auto}
+
+  .box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin:22px 0}
+  .box.warn{background:rgba(255,165,0,.06);border-color:rgba(255,165,0,.32)} .box.warn h3{color:var(--warn);margin-top:0}
+  .box.q{background:rgba(107,155,210,.06);border-color:rgba(107,155,210,.32)} .box.q h3{color:var(--info);margin-top:0}
+  .box.ok{background:rgba(75,175,75,.06);border-color:rgba(75,175,75,.32)} .box.ok h3{color:var(--ok);margin-top:0}
+  .box h3:first-child{margin-top:0} .box p:last-child,.box ul:last-child,.box ol:last-child{margin-bottom:0}
+
+  .v{color:var(--ok);font-weight:700;font-size:12px;letter-spacing:.06em}
+  .p{color:var(--warn);font-weight:700;font-size:12px;letter-spacing:.06em}
+  .s{color:#c9a7f0;font-weight:700;font-size:12px;letter-spacing:.06em}
+
+  figure{margin:26px 0}
+  figure svg{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+  figcaption{font-size:14px;color:var(--dim);margin-top:10px}
+
+  .toc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 26px;margin:34px 0 0}
+  .toc ol{columns:2;column-gap:36px;margin:0;padding-left:1.2em} .toc li{margin-bottom:7px}
+  .toc a{text-decoration:none;color:var(--text)} .toc a:hover{color:var(--goldL)}
+  @media(max-width:700px){.toc ol{columns:1}}
+
+  .pane{background:#08080c;border:1px solid #3a3a4a;border-radius:10px;padding:14px 16px;font:500 13px/1.6 ui-monospace,Menlo,monospace;color:#cfcfe0;margin:14px 0 22px;white-space:pre;overflow:auto}
+  .pane .h{color:var(--gold)} .pane .er{color:var(--er)} .pane .la{color:var(--la)} .pane .th{color:#b98cf0} .pane .al{color:var(--err);font-weight:700} .pane .d{color:#8a8a9e}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Trade&nbsp;Wars inside Claude&nbsp;Code</h1>
+  <p class="sub">The agentic revamp already ends with a CLI and an MCP server on an agent-ready API. This proposes a third head on the same core: a Claude Code mod, so Trade Wars is also the first game you play from inside Claude Code.</p>
+  <div class="meta">
+    <span class="pill draft">Draft — for review</span>
+    <span class="pill not">Not implemented</span>
+    <span class="pill phase">Phase 3 work · designs against Phase 1</span>
+    <span class="pill">Rev 2 · 2026-09-20</span>
+  </div>
+  <div class="toc">
+    <ol>
+      <li><a href="#s0">Where this sits</a></li>
+      <li><a href="#s1">The idea, restated</a></li>
+      <li><a href="#s2">One core, three heads</a></li>
+      <li><a href="#s3">What the readiness layer gives the mod</a></li>
+      <li><a href="#s4">The three-tier model economy</a></li>
+      <li><a href="#s5">The pane</a></li>
+      <li><a href="#s6">The tool surface</a></li>
+      <li><a href="#s7">Token budget design</a></li>
+      <li><a href="#s8">The strategy loop, with real decisions</a></li>
+      <li><a href="#s9">Risks</a></li>
+      <li><a href="#s10">Open questions</a></li>
+      <li><a href="#s11">Build ladder</a></li>
+      <li><a href="#s12">Appendix: what a mod is, verified API</a></li>
+    </ol>
+  </div>
+</header>
+
+<!-- 0 -->
+<section id="s0">
+  <h2><span class="n">0</span>Where this sits</h2>
+  <p class="lede">This document is subordinate to the locked spec. It changes nothing on-chain. It proposes one more client on the API the spec already commits to building.</p>
+  <table>
+    <thead><tr><th>Document</th><th>Role</th><th>This doc's relation to it</th></tr></thead>
+    <tbody>
+      <tr><td><a href="mechanics-audit.html">mechanics-audit.html</a></td><td>Current code, six verified bugs, the agentic-readiness gap table</td><td>The readiness gaps it names are exactly what the mod consumes. §3.</td></tr>
+      <tr><td><a href="architecture-spec.html">architecture-spec.html</a></td><td>Locked on-chain design, Phase 0–3 sequencing, "CLI + MCP last"</td><td>Adds a third head beside CLI and MCP in Phase 3. Adds no on-chain requirement. Does not reopen any ledger decision.</td></tr>
+      <tr><td><a href="economy-circle.html">economy-circle.html</a></td><td>Plain-language economy</td><td>Supplies the decision forks a model is asked to make. §8.</td></tr>
+    </tbody>
+  </table>
+  <div class="box warn">
+    <h3>Sequencing is inherited, not chosen here</h3>
+    <p>The spec's reason for building the CLI and MCP last applies with equal force to the mod: <i>"building the CLI/MCP before the API is agent-ready means rewriting both against a moving contract."</i> No mod code should exist before Phase 1 lands snapshot views, events, preflight quotes and idempotency guards. What this document asks for now is only that the Phase 3 client be planned as one core with three heads (§2), so the mod costs little when its turn comes.</p>
+  </div>
+</section>
+
+<!-- 1 -->
+<section id="s1">
+  <h2><span class="n">1</span>The idea, restated</h2>
+  <p>The spec's endgame is <i>"agents driving scheduled strategies through a CLI + MCP server."</i> The audit describes the finished shape: an agent <i>"enumerates its empire in ~2 RPC round-trips, computes optimal upgrade paths purely off-chain from snapshots, monitors the market via event cursors, and executes a strategy as one retry-safe PTB."</i></p>
+  <p>An MCP server delivers tools. It does not deliver a place to <b>watch</b> the empire, a way to shape what the model <b>sees</b> before each turn, or a <b>scheduler</b> that runs without a model. A Claude Code mod delivers all three, in-process, with the same tool code the MCP server uses. That is the whole proposal:</p>
+  <ul>
+    <li><b>A pane</b> beside the transcript: planets, stores against capacity, NOVA, Company prices, build queue, shipments in flight, and — the one that matters most — <b>inbound compliance fleets with a countdown</b>.</li>
+    <li><b>Shaped context</b>: the compact empire snapshot injected into every turn, so a small model never has to discover state.</li>
+    <li><b>A free tier</b>: mod code that polls event cursors, evaluates preflight quotes and policy guards, and calls a model only at a genuine fork.</li>
+  </ul>
+  <p>The spec already designs for agent players: <i>"daily check-in + agents"</i> pacing, storage that <i>"pairs with agents that empty storage,"</i> upkeep that <i>"suits agent players who budget recurring costs,"</i> and an anti-farm model that is dilution, not identity: a fresh planet's emission share is small, so agents are welcome and farms self-limit. The mod is the client that makes that intended play style cheap enough to actually run.</p>
+</section>
+
+<!-- 2 -->
+<section id="s2">
+  <h2><span class="n">2</span>One core, three heads</h2>
+  <p>The spec plans the CLI <i>"fresh in TypeScript"</i> and the MCP server as wrappers <i>"with almost no on-chain-shaped glue."</i> Plan them as one TypeScript workspace: a core package the three heads import.</p>
+  <figure>
+    <svg viewBox="0 0 1000 330" role="img" aria-label="One core package with three heads: CLI, MCP server, Claude Code mod">
+      <g font-family="-apple-system,system-ui,sans-serif">
+        <rect x="300" y="200" width="400" height="106" rx="14" fill="#1c1c26" stroke="#d4af37" stroke-width="2"/>
+        <text x="500" y="232" text-anchor="middle" font-size="15" font-weight="700" fill="#d4af37">core (TypeScript)</text>
+        <text x="500" y="256" text-anchor="middle" font-size="12.5" fill="#9a9aa8">snapshot readers · event cursors · preflight quotes</text>
+        <text x="500" y="276" text-anchor="middle" font-size="12.5" fill="#9a9aa8">PTB builders · tool specs {name, schema, handler} · signer interface</text>
+        <text x="500" y="296" text-anchor="middle" font-size="12.5" fill="#9a9aa8">policy evaluator (the free tier)</text>
+
+        <rect x="40" y="30" width="250" height="110" rx="14" fill="#1c1c26" stroke="#2a2a38" stroke-width="2"/>
+        <text x="165" y="62" text-anchor="middle" font-size="15" font-weight="700" fill="#e0e0e0">CLI</text>
+        <text x="165" y="86" text-anchor="middle" font-size="12.5" fill="#9a9aa8">humans and cron scripts</text>
+        <text x="165" y="106" text-anchor="middle" font-size="12.5" fill="#9a9aa8">already in the spec (Phase 3)</text>
+
+        <rect x="375" y="30" width="250" height="110" rx="14" fill="#1c1c26" stroke="#2a2a38" stroke-width="2"/>
+        <text x="500" y="62" text-anchor="middle" font-size="15" font-weight="700" fill="#e0e0e0">MCP server</text>
+        <text x="500" y="86" text-anchor="middle" font-size="12.5" fill="#9a9aa8">every other agent client</text>
+        <text x="500" y="106" text-anchor="middle" font-size="12.5" fill="#9a9aa8">already in the spec (Phase 3)</text>
+
+        <rect x="710" y="30" width="250" height="110" rx="14" fill="#1c1c26" stroke="#8a2be2" stroke-width="2"/>
+        <text x="835" y="62" text-anchor="middle" font-size="15" font-weight="700" fill="#c9a7f0">Claude Code mod</text>
+        <text x="835" y="86" text-anchor="middle" font-size="12.5" fill="#9a9aa8">pane · shaped context · scheduler</text>
+        <text x="835" y="106" text-anchor="middle" font-size="12.5" fill="#9a9aa8">this proposal</text>
+
+        <path d="M165 140 V170 H380 V200" stroke="#2a2a38" stroke-width="2" fill="none"/>
+        <path d="M500 140 V200" stroke="#2a2a38" stroke-width="2"/>
+        <path d="M835 140 V170 H620 V200" stroke="#8a2be2" stroke-width="2" fill="none"/>
+        <text x="700" y="165" font-size="11" fill="#9a9aa8">$.tool.register(spec) — same specs the MCP server serves</text>
+      </g>
+    </svg>
+    <figcaption>The tool specs are data. The MCP server serves them over the protocol; the mod registers them in-process. One definition, one handler, two transports.</figcaption>
+  </figure>
+  <table>
+    <thead><tr><th></th><th>CLI</th><th>MCP server</th><th>Claude Code mod</th></tr></thead>
+    <tbody>
+      <tr><td>Who</td><td>Humans, shell scripts, cron</td><td>Any MCP client</td><td>Claude Code only</td></tr>
+      <tr><td>Tools</td><td>Subcommands over core</td><td>Core specs over MCP</td><td>Core specs in-process</td></tr>
+      <tr><td>Watch the empire</td><td>Print and exit</td><td>No</td><td>Live pane, redrawn on events</td></tr>
+      <tr><td>Shape the model's context</td><td>n/a</td><td>No</td><td><code>prompt.context</code> per turn</td></tr>
+      <tr><td>Scheduler without a model</td><td>External cron</td><td>No</td><td><code>$.clock.every</code> in-session</td></tr>
+      <tr><td>Pick the model per decision</td><td>n/a</td><td>No</td><td><code>$.model.complete</code>, agent <code>model</code></td></tr>
+      <tr><td>API stability</td><td>Stable</td><td>Stable spec</td><td>Early access, may change</td></tr>
+    </tbody>
+  </table>
+  <p>Nothing in the mod column requires the MCP server to be dropped. The two are complementary: MCP for reach, mod for the surface that makes cheap play possible.</p>
+</section>
+
+<!-- 3 -->
+<section id="s3">
+  <h2><span class="n">3</span>What the readiness layer gives the mod</h2>
+  <p>The spec's agentic-readiness layer was designed for the CLI and MCP. Every item maps onto a mod concern with no addition. This table is the claim that <b>the mod adds zero on-chain requirements</b>.</p>
+  <table>
+    <thead><tr><th>Spec item (Phase 1)</th><th>What the mod does with it</th></tr></thead>
+    <tbody>
+      <tr><td>Events per state transition, with universe ID + timestamp</td><td>Event cursors replace object polling. The pane redraws on an event, not on a timer. <code>ComplianceLaunched</code> is the inbound-raid alert.</td></tr>
+      <tr><td><code>snapshot(&amp;Planet, &amp;Clock) → PlanetSnapshot</code>; same for Universe and Overseer empire</td><td>One read fills the cache that feeds the pane, the tools and the context line. Replaces today's 15-call devInspect pattern.</td></tr>
+      <tr><td>Abort-free preflight quotes (<code>upgrade_quote</code> etc.)</td><td>The free tier evaluates "is anything affordable, is source coverage there" in code. No model call to find out.</td></tr>
+      <tr><td>Idempotency: <code>expected_level</code>, clamp + remainder-carry</td><td>A scheduled loop can retry after an ambiguous failure without double-spending. This is what makes unattended play safe.</td></tr>
+      <tr><td>Composable <code>public fun</code> with receipts</td><td>One move = one PTB: harvest → withdraw → sell → fuel → upgrade. One signature, one tool call.</td></tr>
+      <tr><td>Coordinate → planet index, occupation events</td><td>The pane draws neighbours; a raid target or trade partner is a lookup, not a scan.</td></tr>
+      <tr><td><code>#[error]</code> strings, unique code ranges</td><td>A tool returns a game-level reason a small model can act on, instead of a framework abort.</td></tr>
+      <tr><td>Fleet and shipment objects with <code>arrival_ms</code></td><td>Countdowns in the pane. The dodge window is a number the free tier can schedule against.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 4 -->
+<section id="s4">
+  <h2><span class="n">4</span>The three-tier model economy</h2>
+  <p>Agent games get expensive when one strong model reads state, decides and executes on every tick. Split the three jobs by cost. The readiness layer is what makes the middle tier free.</p>
+  <div class="tiers">
+    <div class="tier t3">
+      <div class="cap">Tier 3 — rare</div>
+      <h3>Strategist</h3>
+      <p>The main session on a strong model. You describe a strategy in words. It compiles that into a policy object — thresholds, priorities, guards, a dodge rule — and stores it.</p>
+      <div class="cost">runs: when you say so · cost: high · once per strategy change</div>
+    </div>
+    <div class="tier t2">
+      <div class="cap">Tier 2 — free</div>
+      <h3>Watcher + executor</h3>
+      <p>Mod code over core. Follows event cursors, refreshes snapshots, evaluates preflight quotes and policy guards, builds and signs PTBs. Calls no model.</p>
+      <div class="cost">runs: on events and timers · cost: zero tokens · most ticks end here</div>
+    </div>
+    <div class="tier t1">
+      <div class="cap">Tier 1 — cheap</div>
+      <h3>Decider</h3>
+      <p>Haiku. Gets the policy and a compact state line. Returns one move. No files, no tools, no history. Used only where the policy says "judgement".</p>
+      <div class="cost">runs: at a genuine fork · cost: low · ~200 tokens per decision</div>
+    </div>
+  </div>
+  <p>The spec resolves the fairness question this raises. Agents are an intended player type; the anti-farm gate is production-weighted emission plus a level-band interaction rule, not a restriction on automation. The mod does not need to hide that it is an agent, and the game does not need it to.</p>
+</section>
+
+<!-- 5 -->
+<section id="s5">
+  <h2><span class="n">5</span>The pane</h2>
+  <p>This is the part no other head delivers, and where the revamped game gives it real content. Sketch, not a design:</p>
+  <div class="pane"><span class="h">TRADE WARS · universe 0x77e · overseer Alvaro · NOVA 1,240 · SUI 3.1</span>
+<span class="d">planet     coords     stores (used/cap)                    build          next</span>
+Homeworld  1:42:7    <span class="er">ER 812/1000</span>  <span class="la">LA 140/600</span>  <span class="th">TH  90/600</span>   lab L2 · 41m  <span class="d">LA mine L3 = 200 ER · affordable</span>
+Colony-A   1:44:3    <span class="er">ER  43/400</span>   <span class="la">LA 900/900</span> <span class="al">FULL</span> <span class="th">TH   —</span>       —              <span class="d">ship LA out or storage L2</span>
+
+<span class="al">⚠ INBOUND  compliance fleet → Colony-A  wants 400 LA  arrives in 02:17:40</span>
+<span class="d">           pays defender rate 1.08× Company · dodge: post offer / ship to Homeworld</span>
+
+<span class="d">shipments  →Homeworld 300 TH from 0x9c1 · 00:38:12        offers  2 open · 1 filled</span>
+<span class="d">Company    ER 0.42  LA 0.61  TH 1.90 NOVA/unit  (LA −8% 1h, re-arming)</span></div>
+  <p>Three things on that screen are decisions with a clock on them: a full store halting a mine, an inbound fleet with a dodge window, and an element price that is re-arming toward its anchor. A CLI prints them once. An MCP client sees them only if the model asks. The pane shows them the moment the event lands.</p>
+  <h3>Draw triggers</h3>
+  <ul>
+    <li><code>ComplianceLaunched</code> targeting one of my planets → toast, pane alert, and a Tier 1 decision if the policy's dodge rule says "judgement".</li>
+    <li>Store reaches capacity → alert. The spec's halt-at-cap design means this is lost production until acted on.</li>
+    <li>Shipment or fleet <code>arrival_ms</code> passes → redraw, and the free tier files the <code>claim_shipment</code> or <code>execute</code> PTB.</li>
+    <li>Build <code>ready_at</code> passes → <code>claim_build</code>.</li>
+    <li>Timer fallback for reserves, which are clock-computed and drift between events.</li>
+  </ul>
+</section>
+
+<!-- 6 -->
+<section id="s6">
+  <h2><span class="n">6</span>The tool surface</h2>
+  <p><span class="p">PROPOSED</span> — names are placeholders; the shapes follow the spec's lanes. Rule: one tool per player decision, not one per entry function, and the whole surface stays under ten because every visible tool costs tokens in every turn.</p>
+  <table>
+    <thead><tr><th>Tool</th><th>Lane / spec module</th><th>Input</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>tw_state</code></td><td>snapshot views</td><td>none</td><td>Compact empire line from cache. The only read tool.</td></tr>
+      <tr><td><code>tw_build</code></td><td>planet build slots</td><td><code>planet</code>, <code>building</code>, <code>expected_level</code></td><td>Mines, storage, shipyard, lab, terraformer, beacon. Uses <code>upgrade_quote</code> first; idempotent by level.</td></tr>
+      <tr><td><code>tw_sell</code></td><td>Lane A · <code>company::sell_from_store</code></td><td><code>planet</code>, <code>element</code>, <code>amount</code>, <code>min_nova_out</code></td><td>Atomic from the store. The EMA controller means amount and timing are the judgement.</td></tr>
+      <tr><td><code>tw_offer</code></td><td>Lane B · <code>trade_port</code></td><td><code>planet</code>, <code>give</code>, <code>want</code>, <code>expiry</code></td><td>Create or cancel an offer. Free to list.</td></tr>
+      <tr><td><code>tw_accept</code></td><td>Lane B</td><td><code>offer</code>, <code>from_planet</code></td><td>Core computes round-trip fuel from distance; the tool reports it before spending.</td></tr>
+      <tr><td><code>tw_raid</code></td><td>Lane C · <code>compliance</code></td><td><code>target</code>, <code>want</code>, <code>pay_with</code></td><td>Launch. Fuel is burned even on a miss; the tool says so in its result.</td></tr>
+      <tr><td><code>tw_colonize</code></td><td>overseer</td><td><code>coords</code></td><td>NOVA fee scales with distance and colony count. Geography is the decision.</td></tr>
+      <tr><td><code>tw_policy</code></td><td>mod-local</td><td>policy object</td><td>Tier 3 writes the strategy. Stored in <code>$.store</code>.</td></tr>
+      <tr><td><code>tw_autoplay</code></td><td>mod-local</td><td><code>on</code>/<code>off</code>, call budget, gas budget</td><td>Arms the free tier. Refuses to run past either budget.</td></tr>
+    </tbody>
+  </table>
+  <p>Housekeeping — <code>claim_shipment</code>, <code>claim_build</code>, <code>execute</code> on an arrived fleet, <code>drip_refill</code>, <code>sweep_expired</code> — is never a tool. The free tier files those PTBs when their clock passes. A model should not spend tokens on a call that has exactly one correct answer.</p>
+</section>
+
+<!-- 7 -->
+<section id="s7">
+  <h2><span class="n">7</span>Token budget design</h2>
+  <p>Each lever is a verified capability of the mods API (appendix) or a Phase 1 item of the spec. Savings are targets to measure at Phase 3, not measurements.</p>
+  <table>
+    <thead><tr><th>Lever</th><th>How</th><th>Why it saves</th></tr></thead>
+    <tbody>
+      <tr><td>No project instructions</td><td><code>omitClaudeMd: true</code> on the player agent</td><td>The repo's <code>CLAUDE.md</code> is build and style guidance. A decider needs none of it.</td></tr>
+      <tr><td>Minimal tool list</td><td><code>tools: ['mcp__tw__tw_state', …]</code> allowlist</td><td>Every tool description is paid for in every turn it is visible.</td></tr>
+      <tr><td>No agent for simple forks</td><td><code>$.model.complete({ model:'haiku' })</code></td><td>No system prompt beyond the identity block, no history, no tools.</td></tr>
+      <tr><td>Bounded answers</td><td><code>$.model.classify</code> over a label set</td><td>No parsing, no retry on malformed output. "sell / hold / ship" is a label set.</td></tr>
+      <tr><td>Preloaded state</td><td><code>prompt.context</code> injects the state line</td><td>Removes the discovery round-trips where small models wander.</td></tr>
+      <tr><td>Fixed-format state</td><td>one record per planet, fixed field order, format explained once</td><td>Prose state costs several times a fixed record.</td></tr>
+      <tr><td>Gate in code</td><td>preflight quotes + policy guards evaluated by the free tier</td><td>A tick with nothing affordable and nothing inbound calls no model.</td></tr>
+      <tr><td>Two RPC round-trips</td><td>snapshot views (Phase 1)</td><td>Latency is tokens: a slow tool makes the model retry and narrate.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 8 -->
+<section id="s8">
+  <h2><span class="n">8</span>The strategy loop, with real decisions</h2>
+  <p>The revamped economy supplies forks a greedy rule handles badly. That is what justifies a model in the loop at all.</p>
+  <table>
+    <thead><tr><th>Fork</th><th>Why it is a judgement, not arithmetic</th><th>Tier</th></tr></thead>
+    <tbody>
+      <tr><td>Sell now or hold</td><td>The Company price is an EMA that drops as you sell and re-arms toward its anchor over time. Dumping a lump is worse than pacing; pacing costs time you may not have if a store is near cap.</td><td>1</td></tr>
+      <tr><td>Dodge or take the raid</td><td>Settlement pays the defender at a rate skewed in the defender's favour. Sometimes being raided is the best sale available. Sometimes the element is needed for a build and the dodge window is enough to ship it out.</td><td>1</td></tr>
+      <tr><td>Post an offer or raid</td><td>Lane B is cheaper but needs a counterparty; Lane C is a credible fallback that burns fuel on a miss. The spec calls this gunboat diplomacy.</td><td>1</td></tr>
+      <tr><td>Where to colonize</td><td>Fee scales with distance; fuel for every later trade scales with distance too. Clustering versus room.</td><td>3 — rare, expensive, worth the strong model</td></tr>
+      <tr><td>Claim, refill, sweep, execute</td><td>One correct answer once the clock passes.</td><td>2 — never a model</td></tr>
+    </tbody>
+  </table>
+
+  <h3>The loop</h3>
+  <ol>
+    <li><b>You state a strategy</b> in the main session: <i>"expand to three planets in system 42, rush thorium, pace Company sales to keep LA above 0.5, dodge raids only when the element is earmarked for a build."</i></li>
+    <li><b>Tier 3 compiles it</b> into a policy and calls <code>tw_policy</code>. Once.</li>
+    <li><b>You arm autoplay</b> with call and gas budgets.</li>
+    <li><b>Tier 2 watches</b> event cursors and clocks. Housekeeping PTBs go out with no model. Guards are checked in code.</li>
+    <li><b>At a fork</b> Tier 2 calls Haiku with the policy and the state line, and takes back one move.</li>
+    <li><b>Tier 2 executes</b> as one retry-safe PTB, records the receipt, redraws.</li>
+    <li><b>You watch the pane.</b> When the strategy stops fitting, back to step 1.</li>
+  </ol>
+  <div class="box q">
+    <h3>Why the policy is an object</h3>
+    <p>A strategy left in natural language is re-read and re-interpreted on every decision. Compiled to thresholds and guards, most of it is checked by code for free and the model is consulted only for the part that is a judgement. That is the difference between cents per hour and dollars per minute.</p>
+  </div>
+</section>
+
+<!-- 9 -->
+<section id="s9">
+  <h2><span class="n">9</span>Risks</h2>
+  <div class="box warn">
+    <h3>The mods API is early access</h3>
+    <p>Hook modules load only where function hooks are enabled, and Anthropic's README states the API may change between releases without notice. The mod is an experiment beside the CLI and MCP, never the only client. The core package must not depend on it.</p>
+  </div>
+  <table>
+    <thead><tr><th>Risk</th><th>Impact</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr><td>Contract drift</td><td>Building against today's 15-call reads means a rewrite at Phase 1</td><td>No mod code before Phase 1. Inherited from the spec's own sequencing argument.</td></tr>
+      <tr><td>Key custody</td><td>Unattended play needs a signer with no human present</td><td>Shared with the CLI: one signer interface in core. Testnet and a throwaway key for the experiment. Budgets in <code>tw_autoplay</code>. See §10.</td></tr>
+      <tr><td>Company write-hotspot (spec R7)</td><td>At agent scale every mint/burn serializes on shared objects</td><td>The free tier batches housekeeping into one PTB per tick and backs off on conflict. The mod is also a realistic load generator for measuring R7.</td></tr>
+      <tr><td>Runaway spend</td><td>A loop that calls a model per second costs money and gas</td><td>Hard call and gas budgets at arming. The tick refuses past either.</td></tr>
+      <tr><td>Time-dependent reads</td><td>Reserves are clock-computed; a cached value is stale as read</td><td>Cache snapshot inputs, recompute on render. Snapshots return stored and pending split.</td></tr>
+      <tr><td>A model that does not beat a rule</td><td>Tier 1 adds cost and no wins</td><td>Measure against a greedy baseline at Phase 3 step 4 (§11). If it loses, keep the pane and the tools and drop the agent claim.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 10 -->
+<section id="s10">
+  <h2><span class="n">10</span>Open questions</h2>
+  <div class="box q">
+    <ol>
+      <li><b>Key custody, solved once.</b> The CLI needs the same answer. Options: a local keystore the core reads; a configured <code>sui client</code> profile; or "prepare only" where the mod builds the PTB and you sign. Which is the default for unattended play?</li>
+      <li><b>Play while away.</b> <code>$.clock.every</code> lives in a running session. For the spec's daily-check-in pacing, is a Claude Code scheduled routine (cloud) acceptable — which puts the key in the cloud — or does unattended play stay on a local CLI cron and the mod covers only live sessions?</li>
+      <li><b>Repo layout.</b> One TypeScript workspace at Phase 3 with <code>core/</code>, <code>cli/</code>, <code>mcp/</code>, <code>claude-mod/</code>? Or does the mod live outside the game repo because its API is early access?</li>
+      <li><b>Does the web client migrate onto core?</b> The audit criticised its hand-rolled BCS and 15-call reads. Snapshot views make core a better data layer for it too. In scope for Phase 3 or later?</li>
+    </ol>
+    <p>Resolved by the spec since Rev 1: fairness (agents are an intended player type; production-weighted emission and level bands are the gate, no bond) and "is MCP still needed" (yes — it is a locked Phase 3 deliverable; the mod is additive).</p>
+  </div>
+</section>
+
+<!-- 11 -->
+<section id="s11">
+  <h2><span class="n">11</span>Build ladder</h2>
+  <p>Gated on the spec's phases. Nothing below starts before its gate.</p>
+  <table>
+    <thead><tr><th>Gate</th><th>Step</th><th>Proves</th></tr></thead>
+    <tbody>
+      <tr><td><span class="s">NOW</span></td><td>Agree the one-core-three-heads shape for the Phase 3 client. Write tool specs as data from day one.</td><td>Nothing to build. A planning decision.</td></tr>
+      <tr><td><span class="s">PHASE 1 LANDED</span></td><td>Core: snapshot readers, event cursors, preflight, PTB builders, signer interface. Shared by all heads.</td><td>Two-round-trip empire read; retry-safe PTB.</td></tr>
+      <tr><td><span class="s">PHASE 1 LANDED</span></td><td>Read-only pane over core. <code>/tw</code> lists planets, stores, build queue, redraws on events.</td><td>Pane, event cursors, cache. No model, no writes.</td></tr>
+      <tr><td><span class="s">PHASE 1 LANDED</span></td><td><code>tw_state</code> and <code>tw_build</code> registered in-process from the same specs the MCP server will serve.</td><td>Tool registration; real token cost of the state line; one write path end to end.</td></tr>
+      <tr><td><span class="s">PHASE 2 LANDED</span></td><td>Lane tools: <code>tw_sell</code>, <code>tw_offer</code>, <code>tw_accept</code>, <code>tw_raid</code>. Inbound-raid alert.</td><td>The pane has decisions on a clock.</td></tr>
+      <tr><td><span class="s">PHASE 3</span></td><td>Tier 1 via <code>$.model.complete</code> on the sell/dodge/offer forks, measured against a greedy rule.</td><td><b>The real finding.</b> Does a cheap model add wins per token?</td></tr>
+      <tr><td><span class="s">PHASE 3</span></td><td><code>tw_policy</code>, <code>tw_autoplay</code>, budgets. Tier 3 compiles strategy.</td><td>The full loop.</td></tr>
+    </tbody>
+  </table>
+  <p>Each step is testable with <code>claude plugin test</code>; the kit's <code>mock.clock</code> makes arrival countdowns and drip timers deterministic.</p>
+</section>
+
+<!-- 12 -->
+<section id="s12">
+  <h2><span class="n">12</span>Appendix: what a mod is, verified API</h2>
+  <p>A mod is a Claude Code plugin whose body is one <code>register(on)</code> file. It hooks about 35 engine events; at each it can let a call pass (<code>next(e)</code>), change it, or answer it. Anthropic ships four inside the binary and publishes their source at <a href="https://github.com/anthropics/claude-code/tree/main/mods">anthropics/claude-code/tree/main/mods</a>. The built-in <code>diff</code> mod is the precedent for a live pane; <code>agents-md</code> is the precedent for injecting context.</p>
+  <p><span class="v">VERIFIED</span> against <code>mods/types/claude-code.d.ts</code> at <code>anthropics/claude-code@main</code>, read on 2026-09-20.</p>
+  <table>
+    <thead><tr><th>Call</th><th>What the declaration says</th></tr></thead>
+    <tbody>
+      <tr><td><code>$.tool.register(spec)</code></td><td><code>name</code>, <code>description</code>, <code>inputSchema</code>. The model calls it as <code>mcp__&lt;plugin&gt;__&lt;name&gt;</code>. A <code>tool.call</code> hook returning <code>{ result }</code> answers it.</td></tr>
+      <tr><td><code>$.agent.register(spec)</code></td><td>Fields include <code>model</code> (alias <code>haiku</code>), <code>tools</code> allowlist, <code>omitClaudeMd</code>, <code>maxTurns</code>, <code>effort</code>, <code>background</code>, <code>memory</code>, <code>skills</code>.</td></tr>
+      <tr><td><code>$.agent.spawn(args)</code></td><td>Starts a subagent in the background; <code>{ model, agentId }</code> or <code>{ deny }</code>.</td></tr>
+      <tr><td><code>agent.offer</code> hook</td><td><code>{ isOffered: false }</code> hides an agent from the model while the plugin can still spawn it.</td></tr>
+      <tr><td><code>$.model.complete(req)</code></td><td>"No tools, no history, no system prompt beyond the CLI's identity block and <code>request.system</code>." Model alias and token cap.</td></tr>
+      <tr><td><code>$.model.classify(...)</code></td><td>One of a label set, one completion, fixed classifier prompt; <code>undefined</code> when none matched.</td></tr>
+      <tr><td><code>$.ui.open(pane)</code>, <code>ui.render</code>, <code>$.ui.invalidate</code>, <code>$.ui.toast</code>, <code>$.ui.status</code></td><td>Named pane with title, focus, <code>closeOnEscape</code>, requested rows; redraw; toast; status line.</td></tr>
+      <tr><td><code>$.clock.every</code></td><td>Repeating timer; <code>mock.clock</code> resolves waits deterministically in tests.</td></tr>
+      <tr><td><code>$.store.get/set</code></td><td>Key-value persistence for the plugin.</td></tr>
+      <tr><td><code>$.http.fetch</code>, <code>$.process.run</code></td><td>Network and subprocess.</td></tr>
+      <tr><td><code>prompt.context</code> hook</td><td>Supplies instruction files and context to a turn; how <code>agents-md</code> injects <code>AGENTS.md</code>.</td></tr>
+    </tbody>
+  </table>
+  <p class="lede">Anything in this document not in this table, or not in the spec, is a proposal.</p>
+</section>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trade Wars — The Economic Circle (plain-language map)</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg:#ffffff; --fg:#1f1f1f; --fg-muted:#6e6e6e; --heading-fg:#1a1a1a;
+  --accent:#1976d2; --border:#e0e0e0; --code-bg:#f0f0f0; --code-fg:#6e3700;
+  --pre-bg:#fafafa; --aside-bg:#f5f5f5;
+  --success:#2e7d32; --warning:#9a5b00; --error:#d32f2f;
+  --success-bg:#f3f8f4; --warning-bg:#fbf7f0; --error-bg:#fdf5f5;
+  --element:#2e6a4f; --element-bg:#eef5f1;
+  --nova:#6a4a9a; --nova-bg:#f1edf6;
+  --money:#1976d2; --money-bg:#eaf2fb;
+  --sink:#b5540a;
+  --node-bg:#f7f9fb;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:#1e1e1e; --fg:#cccccc; --fg-muted:#9e9e9e; --heading-fg:#e8e8e8;
+    --accent:#4dabf7; --border:#2a2a2a; --code-bg:#2a2a2a; --code-fg:#f0e8d8;
+    --pre-bg:#161616; --aside-bg:#242424;
+    --success:#66bb6a; --warning:#f0c674; --error:#ff7676;
+    --success-bg:#1e251f; --warning-bg:#29241a; --error-bg:#2a1f1f;
+    --element:#6cc59a; --element-bg:#1c2621;
+    --nova:#b39ddb; --nova-bg:#221c2b;
+    --money:#4dabf7; --money-bg:#16222e;
+    --sink:#f0a868;
+    --node-bg:#262626;
+  }
+}
+* { box-sizing:border-box; }
+body { background:var(--bg); color:var(--fg); font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; line-height:1.6; margin:0; }
+.wrap { max-width:920px; margin:0 auto; padding:2rem 1.25rem 4rem; }
+header.doc { border-bottom:1px solid var(--border); padding-bottom:1.1rem; margin-bottom:1.4rem; }
+h1 { font-size:2rem; line-height:1.2; margin:0 0 .3rem; color:var(--heading-fg); }
+h2 { font-size:1.3rem; margin:2.2rem 0 .7rem; color:var(--heading-fg); }
+h3 { font-size:1rem; text-transform:uppercase; letter-spacing:.05em; font-weight:600; color:var(--heading-fg); margin:1.4rem 0 .4rem; }
+a { color:var(--accent); }
+p, li { max-width:76ch; }
+small, figcaption, th { color:var(--fg-muted); }
+code { background:var(--code-bg); color:var(--code-fg); padding:.1em .35em; border-radius:3px; font-size:.9em; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+.lede { font-size:1.08rem; }
+figure { margin:1.4rem 0; }
+figure svg { max-width:100%; height:auto; display:block; }
+figcaption { font-size:.9em; margin-top:.5rem; text-align:center; }
+table { border-collapse:collapse; width:100%; margin:1rem 0; font-size:.92em; }
+th, td { text-align:left; padding:.5rem .6rem; border-bottom:1px solid var(--border); vertical-align:top; }
+th { font-weight:600; font-size:.82em; text-transform:uppercase; letter-spacing:.03em; }
+thead th { border-bottom:2px solid var(--border); }
+aside { background:var(--aside-bg); border:1px solid var(--border); border-radius:4px; padding:.7rem 1rem; margin:1rem 0; }
+aside.warning { background:var(--warning-bg); }
+aside.success { background:var(--success-bg); }
+aside p:first-child { margin-top:0; } aside p:last-child { margin-bottom:0; }
+aside :is(strong,b):first-child { color:var(--heading-fg); }
+aside.warning :is(strong,b):first-child { color:var(--warning); }
+aside.success :is(strong,b):first-child { color:var(--success); }
+.legend { display:flex; flex-wrap:wrap; gap:1rem; margin:.6rem 0 0; font-size:.85em; }
+.legend span { display:inline-flex; align-items:center; gap:.4rem; }
+.sw { width:14px; height:14px; border-radius:3px; display:inline-block; border:1px solid var(--border); }
+.walk { border:1px solid var(--border); border-radius:6px; padding:.6rem 1rem; margin:.8rem 0; background:var(--node-bg); }
+.walk b { color:var(--heading-fg); }
+.tag { display:inline-block; font-size:.72rem; font-weight:600; padding:.1em .5em; border-radius:20px; border:1px solid currentColor; }
+.tag.locked { color:var(--success); }
+.tag.open { color:var(--warning); }
+hr { border:none; border-top:1px solid var(--border); margin:2.3rem 0; }
+@media print { :root { color-scheme:light; --bg:#fff; --fg:#1f1f1f; --fg-muted:#6e6e6e; --heading-fg:#1a1a1a; --accent:#1976d2; --border:#e0e0e0; --aside-bg:#f5f5f5; --warning:#9a5b00; --warning-bg:#fbf7f0; --success:#2e7d32; --success-bg:#f3f8f4; --element:#2e6a4f; --element-bg:#eef5f1; --nova:#6a4a9a; --nova-bg:#f1edf6; --money:#1976d2; --money-bg:#eaf2fb; --sink:#b5540a; --node-bg:#f7f9fb; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+<h1>The Economic Circle</h1>
+<p class="lede">A plain-language map of where resources and NOVA come from, where they go, and why they flow. If the rest of the spec melted your brain, start here.</p>
+</header>
+
+<section>
+<h2>Two substances, one rule</h2>
+<p>The whole economy is built from just two things, and one rule connects them.</p>
+<table>
+<thead><tr><th>&nbsp;</th><th>Elements (ERB / LAN / THO)</th><th>NOVA</th></tr></thead>
+<tbody>
+<tr><th>What it is</th><td>The raw substance — what you build your empire out of.</td><td>The fuel and the money — what lets anything travel, and what you cash out.</td></tr>
+<tr><th>Where it lives</th><td>As <code>Balance</code> inside planets (in-game). Only leaves as a one-way wallet coin to be sold.</td><td>A normal wallet coin. Freely held, spent, and traded for SUI.</td></tr>
+<tr><th>Born from</th><td>Mining (your planets produce it over time).</td><td>Selling elements to the Company (or buying it with SUI).</td></tr>
+<tr><th>Dies by</th><td>Building with it, or being sold to the Company (burned).</td><td>Being burned as travel fuel and on colonization / research / upkeep.</td></tr>
+</tbody>
+</table>
+<p><strong>The one rule that ties them together:</strong> you can't mine everything you need, so you must trade or raid for the rest — and <em>every</em> trade or raid burns NOVA. Elements are what you want; NOVA is what it costs to move them.</p>
+</section>
+
+<hr>
+
+<section>
+<h2>The circle</h2>
+<figure>
+<svg viewBox="0 0 900 560" role="img" aria-labelledby="ct cd" font-family="system-ui,sans-serif" font-size="12.5">
+<title id="ct">The Trade Wars economic circle</title>
+<desc id="cd">Elements are mined and either built with, traded/raided between planets, or sold to the Company and burned to mint NOVA; NOVA fuels the trading and is traded for SUI.</desc>
+<defs>
+<marker id="ae" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--element)"/></marker>
+<marker id="an" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--nova)"/></marker>
+<marker id="am" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--money)"/></marker>
+<marker id="as" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--sink)"/></marker>
+</defs>
+
+<!-- ELEMENT band -->
+<rect x="12" y="14" width="876" height="212" rx="10" fill="var(--element-bg)" stroke="var(--element)" stroke-width="1.5"/>
+<text x="28" y="36" fill="var(--element)" font-weight="700">ELEMENTS · the in-game substance (Balance)</text>
+
+<rect x="30" y="52" width="120" height="46" rx="6" fill="var(--node-bg)" stroke="var(--border)"/>
+<text x="90" y="72" fill="currentColor" text-anchor="middle">Mines</text>
+<text x="90" y="88" fill="var(--fg-muted)" text-anchor="middle" font-size="10.5">produce over time</text>
+
+<rect x="200" y="52" width="130" height="46" rx="6" fill="var(--node-bg)" stroke="var(--border)"/>
+<text x="265" y="72" fill="currentColor" text-anchor="middle">Planet stores</text>
+<text x="265" y="88" fill="var(--fg-muted)" text-anchor="middle" font-size="10.5">your on-hand Balance</text>
+<line x1="150" y1="75" x2="198" y2="75" stroke="var(--element)" marker-end="url(#ae)"/>
+
+<!-- build sink -->
+<rect x="200" y="150" width="130" height="56" rx="6" fill="var(--node-bg)" stroke="var(--border)"/>
+<text x="265" y="172" fill="currentColor" text-anchor="middle">Build &amp; upgrade</text>
+<text x="265" y="188" fill="var(--fg-muted)" text-anchor="middle" font-size="10.5">mines, storage,</text>
+<text x="265" y="200" fill="var(--fg-muted)" text-anchor="middle" font-size="10.5">ships, research</text>
+<line x1="265" y1="98" x2="265" y2="148" stroke="var(--element)" marker-end="url(#ae)"/>
+<text x="278" y="128" fill="var(--element)" font-size="10.5">spend</text>
+
+<!-- trade/raid to other planets -->
+<rect x="400" y="52" width="150" height="56" rx="6" fill="var(--node-bg)" stroke="var(--border)"/>
+<text x="475" y="74" fill="currentColor" text-anchor="middle">Other players' planets</text>
+<text x="475" y="90" fill="var(--fg-muted)" text-anchor="middle" font-size="10.5">Trade (Lane B) · Raid (Lane C)</text>
+<line x1="330" y1="70" x2="398" y2="70" stroke="var(--element)" marker-start="url(#ae)" marker-end="url(#ae)"/>
+<text x="345" y="46" fill="var(--element)" font-size="10.5">get what you can't mine</text>
+
+<!-- sell to company -->
+<rect x="400" y="150" width="150" height="56" rx="6" fill="var(--node-bg)" stroke="var(--border)"/>
+<text x="475" y="172" fill="currentColor" text-anchor="middle">Sell to the Company</text>
+<text x="475" y="188" fill="var(--sink)" text-anchor="middle" font-size="10.5">element is BURNED</text>
+<text x="475" y="200" fill="var(--fg-muted)" text-anchor="middle" font-size="10.5">→ mints NOVA</text>
+<line x1="330" y1="86" x2="398" y2="165" stroke="var(--element)" marker-end="url(#ae)"/>
+<text x="322" y="126" fill="var(--element)" font-size="10.5">sell surplus</text>
+
+<!-- NOVA band -->
+<rect x="12" y="250" width="876" height="180" rx="10" fill="var(--nova-bg)" stroke="var(--nova)" stroke-width="1.5"/>
+<text x="28" y="272" fill="var(--nova)" font-weight="700">NOVA · the fuel &amp; money (wallet coin)</text>
+
+<rect x="400" y="288" width="150" height="46" rx="6" fill="var(--node-bg)" stroke="var(--border)"/>
+<text x="475" y="308" fill="currentColor" text-anchor="middle">NOVA in your wallet</text>
+<text x="475" y="324" fill="var(--fg-muted)" text-anchor="middle" font-size="10.5">minted on sale</text>
+<line x1="475" y1="206" x2="475" y2="286" stroke="var(--nova)" marker-end="url(#an)"/>
+
+<!-- fuel back into trade/raid -->
+<path d="M400,300 C250,300 250,120 398,90" fill="none" stroke="var(--nova)" stroke-dasharray="5 3" marker-end="url(#an)"/>
+<text x="150" y="250" fill="var(--nova)" font-size="10.5">burned as FUEL for every trade / raid / colonize</text>
+
+<!-- non-fuel sinks -->
+<rect x="610" y="288" width="150" height="46" rx="6" fill="var(--node-bg)" stroke="var(--border)"/>
+<text x="685" y="308" fill="currentColor" text-anchor="middle">Sinks (burn)</text>
+<text x="685" y="324" fill="var(--fg-muted)" text-anchor="middle" font-size="10.5">colony · research · upkeep</text>
+<line x1="550" y1="311" x2="608" y2="311" stroke="var(--nova)" marker-end="url(#an)"/>
+
+<!-- money band -->
+<rect x="12" y="454" width="876" height="92" rx="10" fill="var(--money-bg)" stroke="var(--money)" stroke-width="1.5"/>
+<text x="28" y="476" fill="var(--money)" font-weight="700">REAL MONEY · DeepBook NOVA / SUI</text>
+<rect x="400" y="488" width="150" height="42" rx="6" fill="var(--node-bg)" stroke="var(--border)"/>
+<text x="475" y="513" fill="currentColor" text-anchor="middle">NOVA ⇄ SUI pool</text>
+<line x1="475" y1="334" x2="475" y2="486" stroke="var(--money)" marker-start="url(#am)" marker-end="url(#am)"/>
+<text x="490" y="360" fill="var(--money)" font-size="10.5">cash out ↓ (−tax) · buy in ↑</text>
+<text x="120" y="513" fill="var(--fg-muted)" font-size="11">Play-to-earn: sell NOVA for SUI.</text>
+<text x="600" y="513" fill="var(--fg-muted)" font-size="11">Pay-to-accelerate: buy NOVA to fuel faster.</text>
+</svg>
+<figcaption>Green = elements (in-game substance). Purple = NOVA (fuel &amp; money). Blue = real money. The dashed purple arrow is the key link: NOVA is what <em>pays for</em> the trading and raiding that moves elements.</figcaption>
+</figure>
+
+<div class="legend">
+<span><span class="sw" style="background:var(--element-bg);border-color:var(--element)"></span> Elements</span>
+<span><span class="sw" style="background:var(--nova-bg);border-color:var(--nova)"></span> NOVA</span>
+<span><span class="sw" style="background:var(--money-bg);border-color:var(--money)"></span> Real money (SUI)</span>
+<span><span class="sw" style="background:var(--sink);border-color:var(--sink)"></span> Burned / destroyed</span>
+</div>
+</section>
+
+<hr>
+
+<section>
+<h2>Follow one player through a loop</h2>
+<div class="walk">
+<p><b>1. Mine.</b> Your planet produces ERBIUM and LANTHANUM well, but almost no THORIUM (soft scarcity). Ships and a research lab you want both need THORIUM.</p>
+<p><b>2. Get NOVA.</b> You have surplus ERBIUM. You sell some to the Company; it burns the ERBIUM and mints you NOVA. (Or, if you're in a hurry, you buy NOVA with SUI.)</p>
+<p><b>3. Acquire what you lack.</b> You spend NOVA as fuel to run a P2P trade — your ERBIUM for a neighbour's THORIUM — or, if nobody will deal, you burn NOVA to launch a compliance raid and take THORIUM at a defender-favourable rate. Either way, NOVA is the cost of moving goods between planets.</p>
+<p><b>4. Build.</b> You now have THORIUM on-planet. You spend it (plus your other elements) to build the ship and the lab. Those elements are consumed.</p>
+<p><b>5. Repeat — bigger.</b> Better mines and ships mean more surplus, more NOVA, more reach. Cash some NOVA out to SUI if you want to realize the gains, or reinvest it as fuel to expand.</p>
+</div>
+<p>That is the whole game loop. Everything else — storage, colonization, the tech tree — is a variation on "produce, sell for NOVA, spend NOVA to get what you lack, build."</p>
+</section>
+
+<hr>
+
+<section>
+<h2>What's settled vs. what we still choose</h2>
+<p>The <em>structure</em> is locked — the map above is decided. The remaining choices were about keeping NOVA valuable, funding the game, and staying fair against bots, and this session resolved all three.</p>
+
+<h3>Locked <span class="tag locked">decided</span></h3>
+<ul>
+<li>Elements are mined in-game, global type, withdraw-only; the Company is <strong>sell-only</strong> (buys elements for NOVA, never sells them back).</li>
+<li>NOVA is minted by selling elements, priced by a self-correcting per-element controller — an element sold more becomes cheaper, one sold less becomes dearer — burned as fuel, and traded for SUI on DeepBook.</li>
+<li>You get elements you can't mine by <strong>trade or raid</strong> — both burn NOVA. Raids reach pending output, so nothing can be permanently cornered.</li>
+<li>Planets differ (first planet mines all three; colonies can lack one). Storage halts at cap. Colonize by chosen coordinates.</li>
+<li><strong>NOVA issuance is demand-gated:</strong> the mint ceiling tracks exogenous SUI flowing into the NOVA/SUI market (and pool depth), <em>not</em> element production — so emission tightens automatically when demand weakens. (Tying the cap to production is self-referential and wash-farmable — a flaw the revenue check caught; see below.)</li>
+</ul>
+
+<h3>Now decided this session <span class="tag locked">decided</span></h3>
+<table>
+<thead><tr><th>Question</th><th>Decision</th></tr></thead>
+<tbody>
+<tr><td><strong>What makes NOVA wanted?</strong></td><td>Real non-fuel sinks — colonization fees, research, and <strong>light ongoing upkeep on active capacity</strong> (fleets, colonies) — priced in element-value, plus the pay-to-accelerate demand of players buying NOVA with SUI. Fuel alone is circular; these give NOVA the structural demand it needs. Upkeep is adopted at a light level (it suits agent players who budget recurring costs) and is tunable at playtest.</td></tr>
+<tr><td><strong>Fairness vs. farming</strong></td><td><strong>Decided 2026-09-20: no bond. Creating a commander is free</strong>, and the first universe is free. Registering the same commander in each further universe costs <strong>NOVA</strong> (a structural sink and the pay-to-accelerate path; a sybil does not pay it, it just mints another free commander — so this is a progression tax, not the anti-farm gate). The anti-farm gate is <strong>dilution</strong>: each planet's share of the demand-gated NOVA emission is weighted by <strong>planet age and cumulative production</strong> — the same basis the spec already uses for raid immunity — so a fresh farm planet mints a sliver for weeks and farms compete with each other for one bounded budget. Starting shape in the spec: two linear ramps multiplied, <code>w = min(1, age/T_AGE) × min(1, cumulative_production/P_REF)</code>, with <code>T_AGE</code> ≈ the newbie-immunity window. Alt-boosting and bullying are blocked by a <strong>level-band interaction rule</strong>: commanders far apart in progression cannot trade with or raid each other. Why not a bond: a percentage cut can never make a zero-marginal-cost farm unprofitable, and the drip already makes total supply sybil-invariant — sybil harm is distributional, which dilution answers directly. Trade-price floors were considered and rejected (they break legitimate forward trades). Community-defined trade contracts (EVE-style) noted for Phase 3+.</td></tr>
+<tr><td><strong>Cash-out cost</strong></td><td>A protocol cut on NOVA → SUI, taken to the game treasury. A <strong>revenue line and an anti-wash cost</strong> (buy-then-sell round-trips lose the cut); it is <em>not</em> the anti-farm gate — a percentage of a positive number stays positive.</td></tr>
+</tbody>
+</table>
+
+<h2>How the game earns</h2>
+<p>You spotted the real flaw: if the Company buys elements and destroys them, where's the revenue? The answer is that <strong>the game never earns from elements — it earns from NOVA and fees.</strong> Elements are just supply that needs a sink; the money is in the monopoly on NOVA.</p>
+<ul>
+<li><strong>Seigniorage — the monopoly edge.</strong> The Company mints a small cut of all NOVA it issues into its own treasury. That treasury NOVA is worth real SUI to exactly the degree players pay SUI to acquire NOVA and accelerate — so as more people play with more agents, its value grows. This is your "excess NOVA from the monopolized market": the Company's fund.</li>
+<li><strong>Fees.</strong> The NOVA fee for registering a commander in a second and later universe, the NOVA→SUI cut above, and <strong>private-universe creation</strong> — influencers spin up universes for their communities and host events. A clear, scalable revenue line.</li>
+<li><strong>The element↔NOVA exchange stays clean</strong> — automated and unrigged. The game never profits by manipulating what your elements are worth; profit is seigniorage + fees only.</li>
+</ul>
+<aside class="success">
+<p><strong>So must the Company burn the elements it buys?</strong> No — and revenue is identical either way, because it never came from elements. Two options: <em>burn</em> them (simplest, keeps elements scarce), or <em>recycle</em> them into the galaxy's shared reserves so they offset future minting (nothing "wasted", self-balancing supply). <strong>Decided (2026-09-20): recycle to a global pool</strong> — it matches the instinct that destroying resources feels wrong, and it doesn't reopen the buy-side bugs because the elements re-enter the shared drip, never a chosen planet.</p>
+</aside>
+
+<h2>Deliberately unfinished: elements &amp; the tech tree</h2>
+<aside class="warning">
+<p><strong>Three elements is the seed, not the ceiling.</strong> The element list should <em>grow</em>, and different tech should demand different combinations — bigger ships needing one mix, faster ships another, cheaper or quicker construction another — so specialisation and trade deepen as the tree expands. More elaborate build mechanics that stay in the trade-not-battle spirit are wanted here. Design against expansion from the start.</p>
+</aside>
+
+<aside class="success">
+<p><strong>Good news on scope.</strong> None of these decisions change the map — they set the pressure and the business model, not the shape of the loop. And none block the first build step: fixing the existing bugs and standing up tests (Phase 0) is independent of all of it.</p>
+</aside>
+</section>
+
+<footer>
+<hr>
+<p><small>Companion to <code>docs/architecture-spec.html</code> (the full locked design) and <code>docs/mechanics-audit.html</code> (current code + bugs). This page is the friendly overview; the spec is the buildable detail.</small></p>
+</footer>
+
+</div>
+</body>
+</html>

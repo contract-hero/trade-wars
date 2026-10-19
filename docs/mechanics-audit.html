@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trade Wars — On-Chain Mechanics Audit &amp; North-Star Gap Analysis</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --fg: #1f1f1f;
+  --fg-muted: #6e6e6e;
+  --heading-fg: #1a1a1a;
+  --accent: #1976d2;
+  --border: #e0e0e0;
+  --code-bg: #f0f0f0;
+  --code-fg: #6e3700;
+  --pre-bg: #fafafa;
+  --aside-bg: #f5f5f5;
+  --success: #2e7d32;
+  --warning: #9a5b00;
+  --error: #d32f2f;
+  --success-bg: #f3f8f4;
+  --warning-bg: #fbf7f0;
+  --error-bg: #fdf5f5;
+  --sev-critical: #b3261e;
+  --sev-high: #b5540a;
+  --sev-medium: #8a6d00;
+  --sev-low: #4b647a;
+  --chip-bg: #eceff1;
+  --diagram-node-bg: #f5f7fa;
+  --diagram-company: #6a4a9a;
+  --diagram-deepbook: #1976d2;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e1e1e;
+    --fg: #cccccc;
+    --fg-muted: #9e9e9e;
+    --heading-fg: #e8e8e8;
+    --accent: #4dabf7;
+    --border: #2a2a2a;
+    --code-bg: #2a2a2a;
+    --code-fg: #f0e8d8;
+    --pre-bg: #161616;
+    --aside-bg: #242424;
+    --success: #66bb6a;
+    --warning: #f0c674;
+    --error: #ff7676;
+    --success-bg: #1e251f;
+    --warning-bg: #29241a;
+    --error-bg: #2a1f1f;
+    --sev-critical: #ff7676;
+    --sev-high: #f0a868;
+    --sev-medium: #e6cf6a;
+    --sev-low: #9fb8cc;
+    --chip-bg: #2c2c2c;
+    --diagram-node-bg: #262626;
+    --diagram-company: #b39ddb;
+    --diagram-deepbook: #4dabf7;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.6; margin: 0; padding: 0;
+}
+.wrap { max-width: 960px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+header.doc { border-bottom: 1px solid var(--border); padding-bottom: 1.2rem; margin-bottom: 1.5rem; }
+h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 .3rem; color: var(--heading-fg); }
+h2 { font-size: 1.3rem; margin: 2.4rem 0 .8rem; color: var(--heading-fg); padding-top: .5rem; }
+h3 { font-size: 1rem; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; color: var(--heading-fg); margin: 1.6rem 0 .5rem; }
+h4 { font-size: 1rem; font-weight: 600; color: var(--heading-fg); margin: 1.2rem 0 .4rem; }
+a { color: var(--accent); }
+p, li { max-width: 78ch; }
+small, figcaption, th, .muted { color: var(--fg-muted); }
+code { background: var(--code-bg); color: var(--code-fg); padding: .1em .35em; border-radius: 3px; font-size: .9em; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+pre { background: var(--pre-bg); border: 1px solid var(--border); border-radius: 5px; padding: .8rem 1rem; overflow-x: auto; font-size: .86em; }
+pre code { background: none; color: var(--fg); padding: 0; }
+.lede { font-size: 1.08rem; color: var(--fg); }
+nav.toc { background: var(--aside-bg); border: 1px solid var(--border); border-radius: 6px; padding: .9rem 1.2rem; margin: 1.5rem 0; }
+nav.toc ol { margin: .3rem 0 0; padding-left: 1.3rem; columns: 2; column-gap: 2rem; }
+nav.toc li { margin: .2rem 0; }
+@media (max-width: 720px) { nav.toc ol { columns: 1; } }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .92em; }
+th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { font-weight: 600; font-size: .82em; text-transform: uppercase; letter-spacing: .03em; }
+thead th { border-bottom: 2px solid var(--border); }
+tbody tr:hover { background: var(--aside-bg); }
+.chip { display: inline-block; font-size: .74rem; font-weight: 600; letter-spacing: .02em; padding: .12em .6em; border-radius: 20px; background: var(--chip-bg); color: var(--fg); white-space: nowrap; }
+.sev { display: inline-block; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: .1em .5em; border-radius: 3px; border: 1px solid currentColor; white-space: nowrap; }
+.sev.critical { color: var(--sev-critical); }
+.sev.high { color: var(--sev-high); }
+.sev.medium { color: var(--sev-medium); }
+.sev.low { color: var(--sev-low); }
+.status { font-weight: 600; }
+.status.done { color: var(--success); }
+.status.partial { color: var(--warning); }
+.status.missing { color: var(--error); }
+aside { background: var(--aside-bg); border: 1px solid var(--border); border-radius: 4px; padding: .7rem 1rem; margin: 1rem 0; }
+aside.success { background: var(--success-bg); }
+aside.warning { background: var(--warning-bg); }
+aside.error { background: var(--error-bg); }
+aside p:first-child { margin-top: 0; }
+aside p:last-child { margin-bottom: 0; }
+aside :is(strong, b):first-child { color: var(--heading-fg); }
+aside.success :is(strong, b):first-child { color: var(--success); }
+aside.warning :is(strong, b):first-child { color: var(--warning); }
+aside.error :is(strong, b):first-child { color: var(--error); }
+details { border: 1px solid var(--border); border-radius: 5px; padding: .3rem .9rem; margin: .8rem 0; background: var(--pre-bg); }
+details[open] { padding-bottom: .8rem; }
+summary { cursor: pointer; font-weight: 600; padding: .5rem 0; color: var(--heading-fg); }
+figure { margin: 1.4rem 0; }
+figure svg { max-width: 100%; height: auto; display: block; }
+figcaption { font-size: .9em; margin-top: .5rem; text-align: center; }
+.q { border-left: 0; }
+.q-card { border: 1px solid var(--border); border-radius: 6px; padding: .8rem 1rem; margin: .9rem 0; background: var(--aside-bg); }
+.q-card h4 { margin-top: 0; }
+.q-card .rec { color: var(--success); font-weight: 600; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+.pillbar { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; }
+.metric { border: 1px solid var(--border); border-radius: 6px; padding: .6rem .9rem; background: var(--aside-bg); flex: 1 1 130px; }
+.metric .n { font-size: 1.5rem; font-weight: 700; color: var(--heading-fg); display: block; }
+.metric .l { font-size: .8rem; color: var(--fg-muted); }
+hr { border: none; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+ul.tight li { margin: .15rem 0; }
+.filepath { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85em; color: var(--fg-muted); }
+@media print {
+  :root { color-scheme: light; --bg:#fff; --fg:#1f1f1f; --fg-muted:#6e6e6e; --heading-fg:#1a1a1a; --accent:#1976d2; --border:#e0e0e0; --code-bg:#f0f0f0; --code-fg:#6e3700; --pre-bg:#fafafa; --aside-bg:#f5f5f5; --success:#2e7d32; --warning:#9a5b00; --error:#d32f2f; --success-bg:#f3f8f4; --warning-bg:#fbf7f0; --error-bg:#fdf5f5; --sev-critical:#b3261e; --sev-high:#b5540a; --sev-medium:#8a6d00; --sev-low:#4b647a; --chip-bg:#eceff1; --diagram-node-bg:#f5f7fa; --diagram-company:#6a4a9a; --diagram-deepbook:#1976d2; }
+  nav.toc { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+  <h1>Trade Wars — On-Chain Mechanics Audit &amp; North-Star Gap Analysis</h1>
+  <p class="lede">A deep read of the Move contracts as they stand today, the correctness defects worth fixing before anything else, and a concrete module-by-module design to reach the agentic OGame-of-trade vision.</p>
+  <p><small>Scope: <span class="filepath">move/sources/*.move</span>, the CLI and web clients, docs and tests. Generated from a 17-agent audit workflow (6 subsystem mappers, 5 assessors, 6 adversarial verifiers). Source commit: <span class="filepath">main</span>, dormant ~14 months. This is an assessment for your review — no code has been changed.</small></p>
+</header>
+
+<nav class="toc" aria-label="Contents">
+  <strong>Contents</strong>
+  <ol>
+    <li><a href="#tldr">Executive summary</a></li>
+    <li><a href="#current">What is built today</a></li>
+    <li><a href="#alignment">Vision alignment matrix</a></li>
+    <li><a href="#bugs">Confirmed correctness defects</a></li>
+    <li><a href="#target">Target architecture</a></li>
+    <li><a href="#nova">NOVA &amp; The Company</a></li>
+    <li><a href="#lanes">The three trade lanes</a></li>
+    <li><a href="#economy">Resource &amp; progression economy</a></li>
+    <li><a href="#agentic">Agentic-readiness of the API</a></li>
+    <li><a href="#decisions">Decisions only you can make</a></li>
+    <li><a href="#sequencing">Recommended sequencing</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<aside class="warning" id="superseded">
+<p><strong>Read this first (2026-09-20).</strong> Sections 1–4 (summary, what is built, vision matrix, defects) and the agentic-readiness table are the <strong>current-state record</strong> and stand. Sections 5–11 (target architecture, NOVA &amp; the Company, trade lanes, economy, decisions, sequencing) were the <em>first</em> design pass and are <strong>superseded by <a href="architecture-spec.html">architecture-spec.html</a></strong>. They are kept for the reasoning trail. Where the two disagree, the spec is right. The main deltas:</p>
+<table>
+<thead><tr><th>This audit said</th><th>The spec decided</th></tr></thead>
+<tbody>
+<tr><td>Coin bridge with <code>withdraw_element</code> <em>and</em> <code>deposit_element</code></td><td><strong>Withdraw-only.</strong> No deposit; enforced as a package-wide type-flow invariant (R2). Trade and raid contributions are pulled from the actor's own planet store.</td></tr>
+<tr><td>Lane 1: DeepBook <code>Pool&lt;ELEMENT, NOVA&gt;</code> element pools</td><td><strong>No element pools.</strong> DeepBook is NOVA/SUI (+ NOVA/USDC) only. Element → NOVA is the Company's sell-only EMA-price + depth controller.</td></tr>
+<tr><td>Company is two-sided with per-element vaults; virtual constant-product fallback curve</td><td><strong>Sell-only</strong>, no vault, no <code>buy_element</code>; per-element <code>ElementMarket&lt;T&gt;</code> shards (R7); constant-product rejected (ratchets to zero). Bought elements are <strong>recycled</strong> to the shared reserve, not burned.</td></tr>
+<tr><td>Lane 3 rate read at <em>arrival</em> from TWAP</td><td><strong>Snapshotted at launch</strong>, clamped ±~5% at settlement (R1). Never read live.</td></tr>
+<tr><td>Lane 3 settles against on-hand store only</td><td>Settles against on-hand + the target's own offer escrows + inbound shipments + a slice of pending output (R4). Level-band rule gates who may raid whom.</td></tr>
+<tr><td>Premium: cross-rate <em>plus</em> a premium, rounded in the Company's favour; recipient open</td><td>A price <strong>skew in the defender's favour</strong> (a BATNA, not a fee). No routed premium. Self/same-overseer raids forbidden.</td></tr>
+<tr><td>Sybil: small SUI fee or one-per-address gate</td><td><strong>Free commander</strong>, first universe free, NOVA fee per further universe; gate is per-planet emission share weighted by planet age + cumulative production; level-band interaction rule (decided 2026-09-20; R8).</td></tr>
+<tr><td>NOVA emission: epoch mint cap; per-account quota</td><td>Demand-gated to exogenous SUI inflow; one global budget; <code>F_max</code> soft ceiling (R9); <strong>per-planet</strong> age/production-weighted quota.</td></tr>
+<tr><td>Element subsets: hard zero on ~30% of planets, first-join planet gets all three</td><td>Soft scarcity; first planet mines all three; <em>colonies</em> may roll a hard zero. Same intent, narrower.</td></tr>
+<tr><td>Phase 2: DeepBook element pools + optional Company market-making</td><td>Phase 2: <code>nova</code>, <code>company</code>, <code>trade_port</code>, <code>compliance</code>, NOVA/SUI pool. Gated on R1–R4. No market maker on game pairs.</td></tr>
+</tbody>
+</table>
+</aside>
+
+<section id="tldr">
+<h2>Executive summary</h2>
+
+<div class="pillbar">
+  <div class="metric"><span class="n">4</span><span class="l">of ~14 vision pillars actually built</span></div>
+  <div class="metric"><span class="n">6</span><span class="l">confirmed bugs (2 critical)</span></div>
+  <div class="metric"><span class="n">0</span><span class="l">tests (<span class="filepath">tests</span> file is a 6-line stub)</span></div>
+  <div class="metric"><span class="n">3</span><span class="l">events emitted in the whole package</span></div>
+</div>
+
+<p>Encouragingly, <strong>your north star is already written down.</strong> The README lore — The Company, the Nova monopoly, the Company Rate, compliance trades checked at fleet arrival — matches your recap almost point for point. The gap is implementation, not concept, and the pieces that exist are structurally the right pieces (per-element treasuries wrapped in shared "source" objects are exactly the custody pattern a Company NOVA treasury needs; the lazy Clock-based accrual is exactly the no-keeper model travel time needs).</p>
+
+<p>The catch is that what's built is a thin slice — join a universe, get one random planet, upgrade three mines — and it has <strong>two economy-breaking bugs and zero test coverage.</strong> None of the trading exists yet: there is no NOVA coin anywhere in the sources, no trade module, no DeepBook dependency, and elements can never leave a planet as a wallet <code>Coin&lt;T&gt;</code>. That last point is the quiet blocker — every market mechanic you want depends on a withdraw/deposit bridge that does not exist.</p>
+
+<aside class="error">
+<p><strong>Fix before you build anything on top.</strong> Two confirmed criticals (<a href="#bugs">free thorium upgrades</a>, <a href="#bugs">cross-universe reserve theft</a>) plus the free-universe-cap and unbound-refill bugs form a chain that becomes a mint-to-cash-out faucet the moment a wallet-withdraw and a NOVA/SUI pool exist. These are cheap to fix now and load-bearing later — they corrupt exactly the reserve state every future mechanic reads.</p>
+</aside>
+
+<p>The recommended path: <strong>(1)</strong> harden the existing slice — fix the six bugs, add the ID-binding invariants, write the tests that should have gated the hackathon build; <strong>(2)</strong> add the coin bridge and the event/snapshot layer that both the markets and the future agents depend on; <strong>(3)</strong> build NOVA + The Company + the three trade lanes; <strong>(4)</strong> layer the extended economy (planet differentiation, storage, ships, research, colonization). The <a href="#decisions">design decisions</a> section flags the handful of forks where your intent changes the architecture — the biggest is <em>global vs. per-universe currencies</em>, which the current single-treasury design has effectively already decided for you.</p>
+</section>
+
+<hr>
+
+<section id="current">
+<h2>What is built today</h2>
+
+<p>Eleven Move modules, ~1,960 lines. The architecture is a three-tier custody model for resources and a capability model for access:</p>
+
+<div class="grid2">
+<div>
+<h4>Bootstrap &amp; registry</h4>
+<ul class="tight">
+<li><code>trade_wars</code> — singleton shared <code>TradeWars</code> (universe registry, global source IDs, SUI fee vault) + mirror <code>TradeWarsInfo</code> for cheap reads; <code>GameAdminCap</code>.</li>
+<li><code>universe</code> — shared <code>Universe</code> (g×s×p grid, <code>open</code> flag, pre-generated <code>free_planets</code> pool); transferable <code>UniverseCreatorCap</code>.</li>
+</ul>
+<h4>Resources (custody in 3 tiers)</h4>
+<ul class="tight">
+<li><code>erbium</code> / <code>lanthanum</code> / <code>thorium</code> — three standard <code>Coin</code> types, 9 decimals, frozen metadata, one <code>TreasuryCap</code> each.</li>
+<li><code>element_source</code> — global shared wrapper holding each <code>TreasuryCap</code> (the mint monopoly).</li>
+<li><code>universe_element_source</code> — per-universe <code>Balance&lt;T&gt;</code> reservoirs, refilled by minting from the global source.</li>
+</ul>
+</div>
+<div>
+<h4>Players &amp; planets</h4>
+<ul class="tight">
+<li><code>overseer</code> — soulbound player object; tracks joined universes, holds <code>PlanetCap</code>s; entry points: <code>vest</code>, <code>join_universe</code>, three <code>upgrade_*_planet_mine</code>.</li>
+<li><code>planet</code> — shared <code>Planet</code> (3 mines + 3 <code>Balance</code> stores + coords); <code>PlanetCap</code> ownership.</li>
+<li><code>element_mine</code> / <code>mine_configuration_parameters</code> — lazy time-based production; <code>amount = ⌊Δt/1000⌋ · level / production_factor</code>; upgrade cost <code>= base · level</code>.</li>
+</ul>
+<h4>Off-chain</h4>
+<ul class="tight">
+<li><code>cli/</code> — admin Node.js (plain JS) bootstrap: publish, create sources, start/refill universe.</li>
+<li><code>web/src</code> — React/Vite player dapp; reads planet state via 15-call <code>devInspect</code> PTBs with hand-rolled BCS.</li>
+</ul>
+</div>
+</div>
+
+<p>The production loop is genuinely elegant and worth preserving: no per-tick state, no keepers. A mine holds only accounting fields; on <code>extract</code> it computes elapsed production, splits that <code>Balance</code> out of the universe reservoir into the planet store, resets its timestamp, and re-syncs cached config. Upgrade costs flow <em>back</em> into the reservoir — a closed loop, not a burn. That same lazy-Clock pattern is what travel time, build queues, and research timers should all reuse.</p>
+
+<aside class="warning">
+<p><strong>The structural gap that blocks everything market-facing.</strong> Elements are <code>Coin</code> types, but no code path ever hands a player a <code>Coin&lt;T&gt;</code>. All value lives as <code>Balance&lt;T&gt;</code> locked inside shared <code>Planet</code> stores and reservoirs. There is no withdraw-to-wallet and no deposit-from-wallet function anywhere. Until that bridge exists, DeepBook pools, P2P trades, and agent-held inventory are all unreachable — the coin-standard compliance is nominal, not practical.</p>
+</aside>
+</section>
+
+<hr>
+
+<section id="alignment">
+<h2>Vision alignment matrix</h2>
+<p>Your north-star pillars mapped against the code. "Partial" means the scaffolding or the type exists but the mechanic does not.</p>
+
+<table>
+<thead><tr><th>Vision pillar</th><th>Status</th><th>Evidence / what's missing</th></tr></thead>
+<tbody>
+<tr><td>Fully on-chain, no central server</td><td><span class="status done">Built</span></td><td>All state in shared objects; universes are standalone game servers as designed.</td></tr>
+<tr><td>Mined resources are Sui Coins</td><td><span class="status partial">Partial</span></td><td>Types comply (9-dec currencies), but value never leaves shared objects as a wallet <code>Coin</code>. No on/off-ramp.</td></tr>
+<tr><td>OGame-style mines, upgrades, lazy production</td><td><span class="status done">Built</span></td><td>Time-scaled production + level-scaled cost, all lazy. Cost curve is linear (weak choice) — see economy.</td></tr>
+<tr><td>Random planet on join, one per universe</td><td><span class="status done">Built</span></td><td><code>occupy_planet</code> with <code>RandomGenerator</code>, correct Sui randomness usage.</td></tr>
+<tr><td>NOVA fuel coin (non-mineable)</td><td><span class="status missing">Missing</span></td><td>Zero hits for <code>nova</code> in sources. Exists only in README + one web string.</td></tr>
+<tr><td>The Company as on-chain entity</td><td><span class="status missing">Missing</span></td><td>No module, struct, or treasury. <code>GameAdminCap</code> is the only admin root.</td></tr>
+<tr><td>Element → NOVA sale (Company monopoly)</td><td><span class="status missing">Missing</span></td><td>No exchange function; no DeepBook dependency in <code>Move.toml</code>.</td></tr>
+<tr><td>DeepBook pools for price discovery</td><td><span class="status missing">Missing</span></td><td>No pool creation, no mid-price reads, no <code>deepbook</code> dep.</td></tr>
+<tr><td>P2P element-for-element trade w/ NOVA burn</td><td><span class="status missing">Missing</span></td><td>No offer objects, no escrow, no burn path (no <code>burn</code> call exists anywhere).</td></tr>
+<tr><td>Compliance Trade ("attack") at cross-rate + premium</td><td><span class="status missing">Missing</span></td><td>No fleet objects, no arrival lifecycle, no rate oracle.</td></tr>
+<tr><td>Travel distance / fuel cost</td><td><span class="status partial">Partial</span></td><td><code>calculate_travel_distance</code> is a stub returning <code>0</code> with a TODO; <code>system_size</code> stored but never read.</td></tr>
+<tr><td>NOVA ↔ SUI/stablecoin (play-to-earn)</td><td><span class="status missing">Missing</span></td><td>Needs only a pool once NOVA is a plain Coin — no game code required.</td></tr>
+<tr><td>Planet differentiation (element subsets, richness)</td><td><span class="status missing">Missing</span></td><td>Every planet is an identical 3-mine clone.</td></tr>
+<tr><td>Storage limits</td><td><span class="status missing">Missing</span></td><td>Stores and accrual are unbounded Balances.</td></tr>
+<tr><td>Ships / trade capacity</td><td><span class="status missing">Missing</span></td><td>Nothing exists; distance stub blocks it.</td></tr>
+<tr><td>Research / tech tree</td><td><span class="status missing">Missing</span></td><td>Nothing exists.</td></tr>
+<tr><td>Colonization &amp; expansion limits</td><td><span class="status missing">Missing</span></td><td>Exactly one planet per overseer per universe, forever; no colonize/abandon/transfer.</td></tr>
+</tbody>
+</table>
+</section>
+
+<hr>
+
+<section id="bugs">
+<h2>Confirmed correctness defects</h2>
+<p>Nine candidate defects were found; the six below were adversarially verified against the actual code (each reviewer was told to try to refute it). Three more are plausible but unverified — listed at the end. Line numbers are from the current <span class="filepath">main</span>.</p>
+
+<table>
+<thead><tr><th>#</th><th>Sev</th><th>Defect</th><th>Where</th></tr></thead>
+<tbody>
+<tr>
+<td>TW-001</td><td><span class="sev critical">Critical</span></td>
+<td><strong>Thorium mine upgrades are free.</strong> <code>upgrade_thorium_mine</code> asserts affordability and extracts production into stores, but omits the three <code>return_reserves(store.split(cost))</code> payment lines that the erbium and lanthanum paths have. The mine levels up at zero net cost and the player keeps the extracted resources. Unbounded free leveling — the dominant strategy.</td>
+<td><span class="filepath">planet.move:244–267</span></td>
+</tr>
+<tr>
+<td>TW-002</td><td><span class="sev critical">Critical</span></td>
+<td><strong>Cross-universe reserve theft.</strong> <code>extract_element</code> never checks <code>object::id(source) == self.source</code>. Universe sources are shared, so a player can pass another universe's reservoir into their own upgrade PTB and drain <code>(amount_produced − cost)</code> from it. Repeatable across all three elements; breaks per-universe isolation entirely.</td>
+<td><span class="filepath">element_mine.move:110</span></td>
+</tr>
+<tr>
+<td>TW-003</td><td><span class="sev high">High</span></td>
+<td><strong>Anyone can mint into any universe's reservoir.</strong> <code>refill_universe_source</code> takes <code>_cap: &amp;UniverseCreatorCap</code> but never validates it against the target source. Any creator cap (free — see TW-005) mints 1,000,000 units into any under-threshold reservoir, and as a side effect overwrites that universe's mine parameters. Combined with TW-002 it is an unbounded farm.</td>
+<td><span class="filepath">element_source.move:37–49</span></td>
+</tr>
+<tr>
+<td>TW-004</td><td><span class="sev high">High</span></td>
+<td><strong><code>close_universe</code> re-opens the universe.</strong> Line 216 calls <code>universe.open_universe(cap)</code> instead of <code>close_universe</code>. The authoritative <code>Universe.open</code> flag stays <code>true</code>, so <code>join_universe</code> (which only checks that flag) keeps accepting players by object ID after the creator "closes" it. <code>universe::close_universe</code> has zero callers.</td>
+<td><span class="filepath">trade_wars.move:216</span></td>
+</tr>
+<tr>
+<td>TW-005</td><td><span class="sev medium">Medium</span></td>
+<td><strong><code>public_start_universe</code> never checks the <code>public_universe_creation</code> flag,</strong> and no setter exists to toggle it (permanently <code>false</code>, unenforced). Creation is always public at the default price of <code>0</code>; each call spawns 4 shared objects + a free creator cap. State-bloat spam vector and the source of the free caps TW-003 needs.</td>
+<td><span class="filepath">trade_wars.move:145</span></td>
+</tr>
+<tr>
+<td>TW-006</td><td><span class="sev medium">Medium</span></td>
+<td><strong>Universe fees are permanently locked.</strong> Payment is joined whole into <code>universe_creation_fees</code> (no change returned on overpayment) and no withdrawal function exists anywhere. Any SUI collected is irrecoverable without a package upgrade.</td>
+<td><span class="filepath">trade_wars.move:163</span></td>
+</tr>
+</tbody>
+</table>
+
+<details>
+<summary>Three more plausible defects (not adversarially verified)</summary>
+<ul>
+<li><span class="sev low">Med</span> <strong>TW-007 — Accrual can permanently brick a mine.</strong> <code>amount_produced</code> grows unbounded with time·level while <code>extract</code> demands the <em>full</em> accrued amount atomically (no clamp-to-reserves). A high-level mine idle long enough accrues more than the reservoir can ever hold (~1.5M at defaults); every subsequent upgrade then aborts <code>ENotEnoughReserves</code> forever. <span class="filepath">element_mine.move:110</span></li>
+<li><span class="sev low">Low</span> <strong>TW-008 — Div-by-zero on <code>production_factor = 0</code>.</strong> <code>MineConfigurationParameters</code> has no validation and the admin setter accepts <code>0</code>; once synced, every read and upgrade for that element aborts. <span class="filepath">element_mine.move:93</span></li>
+<li><span class="sev low">Low</span> <strong>TW-009 — No bounds on universe dimensions.</strong> A <code>0</code> in any dimension makes the first join abort on empty <code>pop_back</code>; large dims (255³ ≈ 16.5M) eagerly materialize past gas/object limits. <span class="filepath">universe.move:295</span></li>
+</ul>
+</details>
+
+<aside class="warning">
+<p><strong>The four-bug chain.</strong> TW-005 (free creator caps) → TW-003 (mint into any reservoir) → TW-002 (drain any reservoir into your planet) → TW-001 (free thorium on top). Individually annoying; together, once a wallet-withdraw and a NOVA/SUI pool exist, a scheduled agent turns fabricated element wealth into real money. Fix the whole chain before opening any coin egress.</p>
+</aside>
+</section>
+
+<hr>
+
+<section id="target">
+<h2>Target architecture</h2>
+<aside class="warning"><p><strong>Superseded by <a href="architecture-spec.html">architecture-spec.html</a>.</strong> Kept as the first pass. The spec removes the deposit side of the bridge and all element pools; see the <a href="#superseded">delta table</a>.</p></aside>
+<p>The market layer that the vision needs, and how it bolts onto the production layer that already exists. The key insight: <strong>keep universes as production shards, make the market global.</strong> One <code>TreasuryCap</code> per element (already true) means elements are globally fungible, so one set of DeepBook pools and one NOVA serve every universe.</p>
+
+<figure>
+<svg viewBox="0 0 900 560" role="img" aria-labelledby="arch-title arch-desc" font-family="system-ui, sans-serif" font-size="13">
+<title id="arch-title">Trade Wars target architecture</title>
+<desc id="arch-desc">Production layer feeds a coin bridge, which connects to three global market lanes mediated by The Company and DeepBook pools.</desc>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+  </marker>
+</defs>
+
+<!-- Production layer -->
+<rect x="20" y="20" width="300" height="150" rx="8" fill="var(--diagram-node-bg)" stroke="var(--border)"/>
+<text x="35" y="44" fill="currentColor" font-weight="700">Production layer (exists)</text>
+<rect x="38" y="58" width="120" height="42" rx="5" fill="var(--bg)" stroke="var(--border)"/>
+<text x="98" y="76" fill="currentColor" text-anchor="middle">Planet + mines</text>
+<text x="98" y="92" fill="var(--fg-muted)" text-anchor="middle" font-size="11">lazy accrual</text>
+<rect x="182" y="58" width="120" height="42" rx="5" fill="var(--bg)" stroke="var(--border)"/>
+<text x="242" y="76" fill="currentColor" text-anchor="middle">Universe source</text>
+<text x="242" y="92" fill="var(--fg-muted)" text-anchor="middle" font-size="11">Balance reservoir</text>
+<rect x="110" y="116" width="120" height="40" rx="5" fill="var(--bg)" stroke="var(--border)"/>
+<text x="170" y="140" fill="currentColor" text-anchor="middle">Global ElementSource</text>
+
+<!-- Coin bridge -->
+<rect x="360" y="72" width="150" height="52" rx="8" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"/>
+<text x="435" y="94" fill="currentColor" text-anchor="middle" font-weight="700">Coin bridge</text>
+<text x="435" y="111" fill="var(--fg-muted)" text-anchor="middle" font-size="11">withdraw / deposit</text>
+
+<line x1="320" y1="98" x2="358" y2="98" stroke="currentColor" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+
+<!-- Wallet -->
+<rect x="360" y="20" width="150" height="34" rx="6" fill="var(--diagram-node-bg)" stroke="var(--border)"/>
+<text x="435" y="42" fill="currentColor" text-anchor="middle">Player wallet · Coin&lt;T&gt;, Coin&lt;NOVA&gt;</text>
+<line x1="435" y1="72" x2="435" y2="56" stroke="currentColor" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+
+<!-- The Company -->
+<rect x="560" y="20" width="320" height="120" rx="8" fill="var(--diagram-node-bg)" stroke="var(--diagram-company)" stroke-width="2"/>
+<text x="575" y="44" fill="var(--diagram-company)" font-weight="700">The Company (shared)</text>
+<text x="575" y="66" fill="currentColor" font-size="12">holds TreasuryCap&lt;NOVA&gt; · mints on sale, burns on fuel</text>
+<text x="575" y="86" fill="currentColor" font-size="12">TWAP price feeds per element (oracle)</text>
+<text x="575" y="106" fill="currentColor" font-size="12">Company Rate = cross-rate + premium</text>
+<text x="575" y="126" fill="var(--fg-muted)" font-size="11">optional market-maker BalanceManager on DeepBook</text>
+
+<!-- Lanes header -->
+<text x="20" y="230" fill="currentColor" font-weight="700">Three global market lanes</text>
+
+<!-- Lane 1 -->
+<rect x="20" y="245" width="270" height="130" rx="8" fill="var(--bg)" stroke="var(--diagram-deepbook)"/>
+<text x="35" y="269" fill="var(--diagram-deepbook)" font-weight="700">Lane 1 · Element → NOVA</text>
+<text x="35" y="290" fill="currentColor" font-size="12">DeepBook Pool&lt;ELEMENT, NOVA&gt;</text>
+<text x="35" y="309" fill="currentColor" font-size="12">swap, input-token fee (no DEEP)</text>
+<text x="35" y="328" fill="currentColor" font-size="12">price discovery sets NOVA rate</text>
+<text x="35" y="352" fill="var(--fg-muted)" font-size="11">no custom trade code — pure swap</text>
+
+<!-- Lane 2 -->
+<rect x="310" y="245" width="270" height="130" rx="8" fill="var(--bg)" stroke="var(--border)"/>
+<text x="325" y="269" fill="currentColor" font-weight="700">Lane 2 · P2P element swap</text>
+<text x="325" y="290" fill="currentColor" font-size="12">custom trade_port module</text>
+<text x="325" y="309" fill="currentColor" font-size="12">offer + escrow, travel time</text>
+<text x="325" y="328" fill="currentColor" font-size="12">burns NOVA as fuel</text>
+<text x="325" y="352" fill="var(--fg-muted)" font-size="11">shipment objects arrive after Δt</text>
+
+<!-- Lane 3 -->
+<rect x="600" y="245" width="280" height="130" rx="8" fill="var(--bg)" stroke="var(--border)"/>
+<text x="615" y="269" fill="currentColor" font-weight="700">Lane 3 · Compliance Trade</text>
+<text x="615" y="290" fill="currentColor" font-size="12">launch → arrival → execute</text>
+<text x="615" y="309" fill="currentColor" font-size="12">rate read at ARRIVAL from TWAP</text>
+<text x="615" y="328" fill="currentColor" font-size="12">fuel burned at launch (wasted on fail)</text>
+<text x="615" y="352" fill="var(--fg-muted)" font-size="11">enforced, cap-less, economic gate only</text>
+
+<!-- connectors bridge -> lanes -->
+<line x1="435" y1="124" x2="150" y2="243" stroke="currentColor" marker-end="url(#arrow)"/>
+<line x1="720" y1="140" x2="720" y2="243" stroke="currentColor" marker-end="url(#arrow)"/>
+<line x1="435" y1="124" x2="440" y2="243" stroke="currentColor" marker-end="url(#arrow)"/>
+
+<!-- Company reads deepbook -->
+<line x1="560" y1="120" x2="290" y2="290" stroke="var(--diagram-company)" stroke-dasharray="4 3"/>
+<text x="360" y="200" fill="var(--diagram-company)" font-size="11">reads mid-price → TWAP</text>
+
+<!-- P2E lane -->
+<rect x="20" y="405" width="860" height="44" rx="8" fill="var(--diagram-node-bg)" stroke="var(--border)"/>
+<text x="35" y="432" fill="currentColor"><tspan font-weight="700">Play-to-earn leg:</tspan> DeepBook Pool&lt;NOVA, SUI&gt; / Pool&lt;NOVA, USDC&gt; — pure DeepBook, zero game code once NOVA is a plain Coin.</text>
+
+<!-- footer note -->
+<rect x="20" y="470" width="860" height="70" rx="8" fill="var(--bg)" stroke="var(--warning)"/>
+<text x="35" y="494" fill="var(--warning)" font-weight="700">Compliance rate never reads spot.</text>
+<text x="35" y="514" fill="currentColor" font-size="12">DeepBook mid_price is un-depth-weighted and aborts on an empty book. All rate reads route through a</text>
+<text x="35" y="531" fill="currentColor" font-size="12">stored TWAP/EMA with a minimum observation count — enforced by The Company, cranked permissionlessly.</text>
+</svg>
+<figcaption>Production stays sharded per universe; the coin bridge is the single prerequisite that unlocks all three global lanes and the play-to-earn leg.</figcaption>
+</figure>
+</section>
+
+<hr>
+
+<section id="nova">
+<h2>NOVA &amp; The Company</h2>
+<aside class="warning"><p><strong>Superseded by <a href="architecture-spec.html">architecture-spec.html</a>.</strong> The Company is now sell-only with an EMA-price + depth controller and per-element market shards; there is no vault, no buy side and no constant-product curve. Bought elements are recycled.</p></aside>
+
+<h3>The architecture decision this pillar forces</h3>
+<p>NOVA and elements are Move <em>types</em>: one package, one type, one <code>TreasuryCap</code>. Per-universe NOVA as distinct types is impossible without publishing a package per universe. The current code already implies the resolution: <strong>supply is global, production is per-universe.</strong> Universe reservoirs stay as rate-limiters on element creation, not economic borders. This is what makes single global DeepBook pools and one NOVA liquidity base coherent.</p>
+
+<h3>Proposed modules</h3>
+<ul>
+<li><strong><code>nova</code>.</strong> OTW + <code>coin::create_currency&lt;NOVA&gt;</code> (9 decimals to match elements), freeze metadata, hand the <code>TreasuryCap</code> to <code>company::found_company</code> in the same publish PTB. Plain <code>Coin</code>, not <code>sui::token</code> (rationale below). NOVA lives in wallets as a normal coin.</li>
+<li><strong><code>company</code>.</strong> A one-shot, admin-gated <code>found_company</code> (mirrors <code>create_element_sources</code>) creates a shared <code>Company</code> holding the NOVA <code>TreasuryCap</code>, per-element vaults, per-element <code>RateState</code> (TWAP), a <code>premium_bps</code> (e.g. 750 = +7.5%), an epoch mint cap, and an optional DeepBook pool registry. <strong>No admin mint entry exists</strong> — supply is purely algorithmic: mint-on-sale, burn-on-fuel.</li>
+</ul>
+
+<h3>Element → NOVA sale (works day one, DeepBook-independent)</h3>
+<p>Because the Company mints NOVA, a fallback sale can price against a <em>virtual</em> constant-product curve per element with no real NOVA inventory: <code>sell_element&lt;T&gt;(company, payment: Coin&lt;T&gt;, min_out) → Coin&lt;NOVA&gt;</code>. Price falls as players dump an element (this <em>is</em> the dynamic Company Rate), a time-decayed EMA is updated on each trade (the manipulation-resistant rate compliance trades read), and no NOVA input is required — satisfying the "stations near every planet" lore. Keep it <code>public fun</code> returning a <code>Coin</code> so PTBs compose. This curve stays permanently as the guaranteed-liquidity anchor even after DeepBook pools exist.</p>
+
+<h3>Enforcing the NOVA burn</h3>
+<p>Burn is enforced at point-of-use, not at the token layer: every travel function takes <code>fuel: Coin&lt;NOVA&gt;</code> <strong>by value</strong> and ends with <code>company::burn_nova(company, fuel)</code>. Since only the Company holds the cap and <code>Coin</code> has no <code>drop</code>, burning is the only legal way those functions can dispose of the fuel. Overpaid fuel splits exact and returns change (do <em>not</em> repeat the keep-the-whole-coin bug from <code>public_start_universe</code>).</p>
+
+<aside class="success">
+<p><strong>Verdict on <code>sui::token</code>: use plain <code>Coin</code> for both elements and NOVA.</strong> <code>Token&lt;T&gt;</code> is <code>key</code>-only — it cannot enter a DeepBook <code>BalanceManager</code> or sit in a <code>Balance</code>-based struct, so adopting it kills the DeepBook pool vision and the NOVA→SUI play-to-earn leg. The one thing it buys (protocol-enforced spend/burn) you already get with plain <code>Coin</code>, because the burn happens inside game functions that take the coin by value and hold the only <code>TreasuryCap</code>. Reserve <code>sui::token</code> for a future soulbound resource (e.g. research points) that must never be tradable.</p>
+</aside>
+</section>
+
+<hr>
+
+<section id="lanes">
+<h2>The three trade lanes</h2>
+<aside class="warning"><p><strong>Superseded by <a href="architecture-spec.html">architecture-spec.html</a>.</strong> Lane 1 is not a DeepBook pool but the Company sell function; Lane 3 snapshots its rate at launch and settles against escrows and inbound as well as on-hand; the premium is a defender-favourable skew. Lanes B and C carry a level-band check.</p></aside>
+<p>The DeepBook design below is grounded in the local checkout at <span class="filepath">deepbookv3/packages/deepbook</span> — real API surface, not assumptions.</p>
+
+<h3>Lane 1 — Element → NOVA via DeepBook</h3>
+<p>Convention: all pools are <code>Pool&lt;ELEMENTx, NOVA&gt;</code> (element = base, NOVA = quote). Because elements are globally fungible, one set of three pools serves all universes. The player path needs no custom trade code:</p>
+<pre><code>// player PTB
+let erb: Coin&lt;ERBIUM&gt; = overseer::withdraw_element&lt;ERBIUM&gt;(...);
+let (change, nova, _deep) = pool::swap_exact_base_for_quote&lt;ERBIUM, NOVA&gt;(
+    pool, erb, coin::zero&lt;DEEP&gt;(ctx), min_nova_out, clock, ctx);</code></pre>
+
+<aside class="warning">
+<p><strong>Two verified DeepBook gotchas that shape the design.</strong> (1) On game pairs you <em>must</em> pass <code>coin::zero&lt;DEEP&gt;()</code> and <code>pay_with_deep = false</code> — a whitelisted DEEP reference pool can never exist for NOVA/elements, so any DEEP-fee path aborts <code>ENoDataPoints</code>. Fees are then input-token at <code>taker_fee × 1.25</code>; budget that into market-maker spreads. (2) <code>pool::mid_price</code> is a public view but <strong>aborts on an empty book side</strong> (<code>EEmptyOrderbook</code>) and is <em>not</em> depth-weighted — one 1-lot order at an extreme tick moves it arbitrarily. This is exactly why compliance rates route through a stored TWAP, never spot. Pool creation costs exactly 500 DEEP each, tick sizes must be powers of ten.</p>
+</aside>
+
+<h3>Lane 2 — P2P element-for-element (custom, burns NOVA)</h3>
+<p>Each offer is its own shared object (no central hot <code>Table</code>): <code>TradeOffer&lt;Offered, Wanted&gt;</code> holding an escrowed <code>Balance&lt;Offered&gt;</code>, want amount, origin coords, expiry. <code>create_offer</code> withdraws from the seller's planet store (settling production first) into the escrow. <code>accept_offer</code> takes the buyer's payment + <code>fuel: Coin&lt;NOVA&gt;</code>, asserts <code>fuel ≥ round_trip_fuel(distance)</code>, burns the fuel, and — crucially — goods do <strong>not</strong> teleport: it mints two <code>Shipment</code> objects that arrive after <code>Δt = distance × ms_per_distance</code> and are claimed into the destination planets via a permissionless deposit. Buyer pays full round-trip fuel regardless of outcome (per README). Expired offers get a permissionless sweep so shared-object litter is bounded.</p>
+
+<h3>Lane 3 — Compliance Trade (the "attack")</h3>
+<p>The Sui-native framing: an enforced trade is a <em>public function on the target's shared <code>Planet</code></em> that deliberately performs a cap-less mutation, gated only by economic conditions. Two phases honor "rate checked at arrival":</p>
+<ol>
+<li><strong><code>launch</code></strong> — burns fuel immediately (the NOVA at risk), escrows the attacker's payment sized at <code>demanded × rate × safety_margin</code> (e.g. 150%, because the binding rate is read later), creates a shared <code>ComplianceFleet</code> with <code>arrival_ms</code>, and emits <code>ComplianceLaunched</code> so the target sees it coming — the negotiation window the premium is designed to encourage.</li>
+<li><strong><code>execute</code></strong> (callable by anyone after arrival) — reads the cross-rate from the TWAP feeds (<code>rate(Pay→Want) = twap(NOVA/Want)/twap(NOVA/Pay) × (1 + premium)</code>, rounded in the Company's favor), then settles against the target's <em>on-hand store</em> only. Success pays the target and ships goods back to the attacker; failure (target liquidated the resource, or rate moved past the escrow) returns the escrow and the launch fuel is already gone — wasted, exactly as specified. Target's "spend before arrival" dodge works automatically because the store is checked at landing.</li>
+</ol>
+
+<aside class="error">
+<p><strong>Griefing is the sharpest balance risk here.</strong> Repeated attacks can strip a new player's only planet, and the play-to-earn leg lets a whale buy attack fuel with SUI. Newbie-immunity window, per-target cooldown, and a max-fraction-per-landing cap are not optional polish — they are the difference between "enforced trading" and "wallet-draining harassment." These are pure game-balance numbers only you can set.</p>
+</aside>
+</section>
+
+<hr>
+
+<section id="economy">
+<h2>Resource &amp; progression economy</h2>
+<aside class="warning"><p><strong>Superseded by <a href="architecture-spec.html">architecture-spec.html</a>.</strong> Direction unchanged and adopted. Numbers and the emission model (demand-gated, per-planet weighted quota) are in the spec's Production and Tokens sections.</p></aside>
+
+<h3>Diagnosis of the current economy</h3>
+<p>Production <code>p(L) = L/5</code> units/s, cost <code>base·L</code> (linear), so payback ≈ <code>50L</code> seconds and levels grow <code>O(t)</code>, cumulative supply <code>O(t²)</code> — a pure faucet with no sinks and no meaningful choices (all three elements identical, all planets identical, and thorium is free). The redesign must bend cost geometric, cap accrual, differentiate planets, add real sinks, and drop the manual refill keeper — all while staying lazy.</p>
+
+<div class="grid2">
+<div>
+<h4>Foundation fixes (prerequisites)</h4>
+<ul class="tight">
+<li>Fix the three missing thorium <code>return_reserves</code> lines (or refactor all three upgrades into one <code>pay_costs</code> helper).</li>
+<li>Add <code>universe: ID</code> to <code>Planet</code>; assert <code>source.id == mine.source</code> and <code>source.universe == planet.universe</code> everywhere; bind refill caps to their universe.</li>
+<li>Kill truncation loss — accumulate accrual in milli-units and carry the remainder, so frequent small extracts stop yielding zero.</li>
+<li>Resolve decimals: scale all constants by 1e9 (wallet-friendly) or redeploy at 0 decimals — <em>before</em> any pool exists.</li>
+</ul>
+</div>
+<div>
+<h4>New mechanics (each stays lazy)</h4>
+<ul class="tight">
+<li><strong>Storage</strong> = bounded accrual: <code>effective = min(produced, capacity − stored)</code>. This single clamp also fixes the mine-bricking bug (TW-007).</li>
+<li><strong>Planet differentiation</strong> rolled at claim time: primary/secondary/poor element richness in basis points; ~30% chance a slot is exactly 0 → that planet <em>cannot</em> mine that element and must trade.</li>
+<li><strong>Build slots &amp; lazy construction queue</strong>: each building level consumes a field; <code>start_build</code> pays now, <code>claim_build</code> after <code>ready_at</code>. Time-gates progression independent of raw wealth.</li>
+<li><strong>Ships</strong> (Shipyard-gated) = trade capacity; the largest element sink — route ship/research costs to <em>burn</em>, keep mine/storage costs recycling.</li>
+<li><strong>Research</strong> per-overseer-per-universe: extraction, cargo, astrophysics (gates colony count), nova-efficiency, compliance-shield.</li>
+<li><strong>Colonization</strong>: cap = <code>1 + astrophysics_level</code>; cost curve lives in a geometric NOVA burn per additional planet; <code>abandon_planet</code> returns coords so universes never exhaust.</li>
+</ul>
+</div>
+</div>
+
+<h3>Emission without a keeper</h3>
+<p>Replace the manual <code>refill_universe_source</code> with a permissionless lazy drip: the reservoir gains <code>last_drip_ms</code>, <code>drip_rate_per_s</code>, <code>max_reserves</code>; any player whose extraction would fall short simply prepends a <code>drip_refill</code> call in their PTB. Universe inflation becomes an explicit tunable schedule instead of an ops process, and the global source is touched only opportunistically. Net inflation = drip − incineration, both observable on-chain.</p>
+
+<aside class="success">
+<p><strong>An extra "trade-not-battle" mechanic worth considering: Supply Contracts.</strong> A planet posts a standing on-chain order (element X for Y at ratio R, secured by escrow); others fill it by shipping (NOVA burn applies). It is the PvE-free demand generator that makes richness-zero planets viable, and it gives the Compliance Trade a clean definition: "forcibly filling someone's <em>unposted</em> contract at the pool cross-rate + premium."</p>
+</aside>
+</section>
+
+<hr>
+
+<section id="agentic">
+<h2>Agentic-readiness of the API</h2>
+<p>Since the endgame is agents driving scheduled strategies through a CLI + MCP server, the contract layer needs to be machine-drivable. Today it mostly is not — but the fixes are additive and cheap.</p>
+
+<table>
+<thead><tr><th>Gap</th><th>Prerequisite to add</th></tr></thead>
+<tbody>
+<tr><td><strong>3 events total</strong>, all creation-time. No player-action events, so an indexer cannot reconstruct history and an agent must diff-poll every shared object.</td><td>One event per state transition (join, upgrade, harvest, refill, open/close, trade lifecycle), each carrying universe ID + timestamp.</td></tr>
+<tr><td><strong>Reading one planet = 15 positional <code>devInspect</code> calls</strong> (the web client proves it). No snapshot view, no split of stored vs. pending.</td><td><code>snapshot(&amp;Planet, &amp;Clock) → PlanetSnapshot</code> (copy+drop); same for Universe and Overseer empire.</td></tr>
+<tr><td><strong>No preflight.</strong> <code>has_enough_*</code> is private and counts pending production, but <code>extract</code> can still abort on reservoir shortfall (TOCTOU between simulation and execution).</td><td>Abort-free <code>upgrade_quote</code> checking <em>both</em> planet affordability and source coverage.</td></tr>
+<tr><td><strong>Not idempotent.</strong> A resubmit after an ambiguous failure double-upgrades and double-spends; extracting too often yields zero forever.</td><td><code>expected_new_level</code> guard on upgrades; clamp + remainder-carry on extract so any schedule is safe.</td></tr>
+<tr><td><strong>Not composable.</strong> Every mutator is a non-public <code>entry fun</code>, so no future trading package or user strategy module can compose them; nothing returns receipts.</td><td>Promote player mutators to <code>public fun</code> returning small receipts (keep only <code>join_universe</code> as private entry for <code>&amp;Random</code> safety).</td></tr>
+<tr><td><strong>Only your own planets are discoverable.</strong> No <code>PlanetOccupied</code> event, no coordinate→planet index — a hard blocker for compliance-trade targeting.</td><td>Emit occupation events; replace the eager <code>free_planets</code> vector with an <code>occupied: Table&lt;u32, ID&gt;</code> + <code>planet_at(coords)</code> view (also fixes the 255³ gas blowup and O(n) shuffle).</td></tr>
+<tr><td><strong>Error codes overlap across modules</strong> and framework aborts (table/vec_map not-found) leak to callers with no game-level meaning.</td><td>Move 2024 <code>#[error]</code> string constants, unique code ranges, membership pre-checks.</td></tr>
+</tbody>
+</table>
+
+<p>With these in place, an agent enumerates its empire in ~2 RPC round-trips, computes optimal upgrade paths purely off-chain from snapshots, monitors the market via event cursors, and executes a strategy as one retry-safe PTB (<code>harvest → withdraw → trade → deposit → upgrade(expected_level)</code>). The MCP server then wraps these as tools with almost no on-chain-shaped glue.</p>
+</section>
+
+<hr>
+
+<section id="decisions">
+<h2>Decisions only you can make</h2>
+<aside class="warning"><p><strong>Superseded by <a href="architecture-spec.html">architecture-spec.html</a>.</strong> All seven are decided. Each card below now carries the decision as of 2026-09-20; the leanings are kept to show what changed.</p></aside>
+<p>These forks change the architecture, not just the numbers. I have put a recommendation on each, but they hinge on your intent, so they are the first things to settle before the build phase. I will bring these to you as explicit questions before writing code.</p>
+
+<div class="q-card">
+<h4>1. Coin egress model — the single biggest fork</h4>
+<p>Do elements leave planets as wallet-held <code>Coin&lt;T&gt;</code> (required for DeepBook element pools and agent inventory), or does all trading operate on planet-store <code>Balance</code>s through game modules only (tighter control, but DeepBook reduces to NOVA/SUI pairs and the Company must bridge store-balances to pool liquidity)?</p>
+<p><span class="rec">Leaning:</span> wallet-held coins with a withdraw/deposit bridge — it is what the whole vision rests on. But it commits you to a global element economy (next question).</p>
+<p><span class="rec">Decided:</span> <strong>Withdraw-only.</strong> Wallet <code>Coin&lt;T&gt;</code> exists only to sell to the Company; no deposit path at all (type-flow invariant, R2). Trading operates planet-store to planet-store through game modules.</p>
+</div>
+
+<div class="q-card">
+<h4>2. Global vs. per-universe economies</h4>
+<p>The current single-<code>TreasuryCap</code> design makes ERBIUM globally fungible, so one set of NOVA pools serves everyone. Keeping per-universe economies would require per-universe wrapped tokens — a major rework that contradicts the existing design.</p>
+<p><span class="rec">Leaning:</span> accept global supply / per-universe production. Universes stay production shards; the market is one galaxy-wide venue. This matches "NOVA price for everyone."</p>
+<p><span class="rec">Decided:</span> <strong>Global supply, per-universe production.</strong> As leaned.</p>
+</div>
+
+<div class="q-card">
+<h4>3. Compliance dodge vs. lock</h4>
+<p>When a fleet launches, can the target freely spend the demanded element before arrival (dodgeable attack, attacker's fuel wasted — OGame fleet-save flavor), or is a portion frozen at launch (stronger aggression, but a cheap asset-freeze grief)? Middle option: failed arrival still takes <code>min(store, demanded)</code> as a partial fill.</p>
+<p><span class="rec">Leaning:</span> no-lock + dodgeable, with meaningful fuel cost as the attacker's risk. Simplest and least griefable; revisit if attacks feel toothless.</p>
+<p><span class="rec">Decided:</span> <strong>No lock, fully dodgeable</strong>, launch fuel burned on a miss. Settlement basis widened to escrows + inbound + pending output (R4) so parking stock elsewhere is not a free dodge.</p>
+</div>
+
+<div class="q-card">
+<h4>4. Element subsets — hard zero or soft scarcity?</h4>
+<p>Should ~30% of planets be <em>unable</em> to mine a given element (maximizes forced trading — the game's thesis), or only have low richness (softer, no one is ever stranded)? Hard zero can strand early players before markets have liquidity.</p>
+<p><span class="rec">Leaning:</span> hard zero, but guarantee first-join planets all three elements so newcomers bootstrap before depending on the market.</p>
+<p><span class="rec">Decided:</span> <strong>Soft scarcity</strong> for the first planet (mines all three); <strong>colonies</strong> may roll a hard zero.</p>
+</div>
+
+<div class="q-card">
+<h4>5. Who receives the compliance premium?</h4>
+<p>The target (compensation, softens attacks), The Company vault (a NOVA/element sink, lore-consistent monopoly rent), or burned? This materially changes attack incentives.</p>
+<p><span class="rec">Leaning:</span> split — cross-rate to the target, premium slice to the Company as a sink. Tunable later.</p>
+<p><span class="rec">Decided:</span> <strong>Nobody.</strong> It is a price skew in the defender's favour — a BATNA, not a routed fee. Self and same-overseer raids are forbidden.</p>
+</div>
+
+<div class="q-card">
+<h4>6. Sybil stance on Overseers</h4>
+<p><code>vest_overseer</code> is free and unlimited, so "one planet per universe" and colony caps mean nothing against an agent minting 1,000 overseers. Is multi-account accepted as inevitable, or should minting be made scarce (SUI fee, one-per-address registry)?</p>
+<p><span class="rec">Leaning:</span> a small SUI fee or per-address gate — otherwise every scarcity mechanic downstream is decorative, and the agentic angle makes farming trivial.</p>
+<p><span class="rec">Decided:</span> <strong>Free commander</strong>, first universe free, NOVA fee per further universe. Anti-farm gate is per-planet emission share weighted by planet age + cumulative production; a level-band interaction rule blocks alt-boosting and bullying. No bond, no fee, no registry (decided 2026-09-20).</p>
+</div>
+
+<div class="q-card">
+<h4>7. Session cadence &amp; pacing target</h4>
+<p>Cost-curve steepness and drip rate depend on whether this is hours-to-mid-game (hackathon demo, ~1.2× per level) or weeks (OGame pacing, ~1.5×). What check-in cadence are you designing for — hourly, daily?</p>
+<p><span class="rec">Leaning:</span> daily check-in with agent automation filling the gaps — but this is entirely your call and sets every economy constant.</p>
+<p><span class="rec">Decided:</span> <strong>Daily check-in + agents</strong>, ~1.5× geometric cost curve. As leaned.</p>
+</div>
+
+<p class="muted">Lower-stakes knobs to settle during the build: fuel formula shape (flat vs. cargo-scaled), storage-overflow semantics (halt vs. loss), colony targeting (random vs. chosen coordinates), research scope (per-universe vs. account-global), ships as planet-bound vs. Kiosk-tradable NFTs, and DEEP sourcing / target network for pool creation.</p>
+</section>
+
+<hr>
+
+<section id="sequencing">
+<h2>Recommended sequencing</h2>
+<aside class="warning"><p><strong>Superseded by <a href="architecture-spec.html">architecture-spec.html</a>.</strong> Phase structure adopted. Phase 1 has no <code>deposit_element</code>; Phase 2 has no element pools and is gated on red-team items R1–R4; the CLI, MCP server and the Claude Code mod are Phase 3 heads on one core.</p></aside>
+<p>Four phases. Each ends at a state that is coherent and testable — you never carry a half-wired mechanic across a phase boundary.</p>
+
+<h3>Phase 0 — Harden the existing slice</h3>
+<ul class="tight">
+<li>Fix TW-001…TW-006 and the three unverified defects.</li>
+<li>Add the economy invariants: <code>universe: ID</code> on <code>Planet</code>, source-ID and universe-ID asserts on every extract/upgrade/refill.</li>
+<li>Resolve decimals now (scale constants or redeploy at 0 decimals).</li>
+<li><strong>Write the test suite the hackathon skipped</strong> — the current file is a 6-line stub. This is the "battle-tested" bar you named; nothing else should ship until it exists.</li>
+</ul>
+
+<h3>Phase 1 — Foundations for markets &amp; agents</h3>
+<ul class="tight">
+<li>Coin bridge: <code>withdraw_element</code> / <code>deposit_element</code>, plus a standalone <code>harvest</code>.</li>
+<li>Event layer + snapshot views + preflight quotes + idempotency guards.</li>
+<li>Promote player mutators to composable <code>public fun</code> with receipts.</li>
+<li>Lazy drip refill; storage caps (which also retire the mine-brick bug).</li>
+</ul>
+
+<h3>Phase 2 — The market</h3>
+<ul class="tight">
+<li><code>nova</code> + <code>company</code> (virtual-curve sale live from day one).</li>
+<li>DeepBook pools (Lane 1) + TWAP feeds + optional Company market-making.</li>
+<li><code>trade_port</code> (Lane 2) with shipments and NOVA burn.</li>
+<li><code>compliance</code> (Lane 3) with launch/arrival/execute and the griefing guards.</li>
+<li>NOVA/SUI + NOVA/USDC pools — the play-to-earn leg, near-zero game code.</li>
+</ul>
+
+<h3>Phase 3 — The full game</h3>
+<ul class="tight">
+<li>Planet differentiation, build slots, ships, research, colonization.</li>
+<li>Optional Supply Contracts mechanic.</li>
+<li>Then, and only then: the CLI (fresh in TypeScript — the current one is plain JS) and the MCP server on top of the now-agent-ready API.</li>
+</ul>
+
+<aside class="success">
+<p><strong>Why this order.</strong> Every market and agent mechanic depends on the coin bridge and the event/snapshot layer (Phase 1), and those in turn depend on the invariants and tests (Phase 0). Building NOVA before the four-bug chain is closed would ship a money printer; building the CLI/MCP before the API is agent-ready would mean rewriting both against a moving contract. The dependency graph, not preference, dictates the sequence.</p>
+</aside>
+</section>
+
+</main>
+
+<footer>
+<hr>
+<p><small>Assessment only — no code was modified. Correctness findings were adversarially verified against the source; design proposals are recommendations pending your decisions in the section above. Generated by a 17-agent audit workflow over the <span class="filepath">trade-wars</span> repository.</small></p>
+</footer>
+
+</div>
+</body>
+</html>
