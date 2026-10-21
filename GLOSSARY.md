@@ -1,6 +1,6 @@
 # Trade Wars
 
-An agentic trade game on Sui. Players run planets that mine elements, trade or raid for the elements they lack, and sell surplus to the Company for NOVA. This glossary grows one wayfinder ticket at a time; terms below were fixed by the emission-model decision of 2026-10-20.
+An agentic trade game on Sui. Players run planets that mine elements, trade or raid for the elements they lack, and sell surplus to the Company for NOVA. This glossary grows one wayfinder ticket at a time; terms below were fixed by the emission-model and markets-view decisions of 2026-10-20.
 
 ## Language
 
@@ -55,6 +55,26 @@ The global per-element base settings for production and upgrade costs, shared by
 A per-universe factor fixed at creation that scales mine production for every planet in that universe. Storage caps are not scaled.
 _Avoid_: economy speed, server speed
 
+### Markets
+
+**Markets view**:
+The client panel that shows Company prices, the public NOVA/SUI market and the player's balances, and hosts the swap.
+
+**Company price**:
+The NOVA the Company pays per unit of an element at this moment, set by its controller.
+_Avoid_: exchange rate, market price (for the Company's side)
+
+**Cash out**:
+A player's swap of NOVA for SUI on the public NOVA/SUI market.
+_Avoid_: withdraw, sell NOVA
+
+**Buy in**:
+A player's swap of SUI for NOVA on the public market, to accelerate play.
+_Avoid_: deposit, top up
+
+**Human gate**:
+An action the player must take in person. The agent may recommend it and can never execute it. Cash out and buy in sit behind it.
+
 ## Retired terms
 
 **Drip** (retired 2026-10-20):
@@ -62,3 +82,6 @@ The former permissionless refill of per-universe reservoirs. There is no drip; t
 
 **Reservoir** (retired 2026-10-20):
 The former per-universe element pool. Elements exist only in planet stores and wallets.
+
+**Cash-out cut** (retired 2026-10-20):
+The former treasury cut on a cash out. There is none: NOVA is a plain coin on a public market, so no cut can be enforced.
